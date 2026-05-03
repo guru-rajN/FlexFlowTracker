@@ -1,6 +1,6 @@
 import { Component, OnInit, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormControl, Validators, FormGroup } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormControl, Validators, FormGroup } from '@angular/forms';
 import { FirebaseService } from '../../services/firebase.service';
 import { GeminiService } from '../../services/gemini.service';
 import { signInWithPopup, GoogleAuthProvider, User } from 'firebase/auth';
@@ -24,6 +24,7 @@ interface UserProfile {
   standalone: true,
   imports: [
     CommonModule, 
+    FormsModule, 
     ReactiveFormsModule, 
     LucideAngularModule
   ],
@@ -113,7 +114,7 @@ interface UserProfile {
              </div>
              <div class="bg-slate-900/50 border border-slate-800 p-4 rounded-2xl flex flex-col justify-between">
                 <p class="text-[9px] uppercase tracking-[0.2em] text-slate-500 font-bold mb-1">Net Flow</p>
-                <p class="text-2xl font-black text-blue-400 tracking-tighter">{{ todayCalories - todayCaloriesBurned }}<span class="text-[10px] ml-1 text-slate-500 uppercase">net</span></p>
+                <p class="text-2xl font-black text-blue-400 tracking-tighter">{{ todayCalories() - todayCaloriesBurned() }}<span class="text-[10px] ml-1 text-slate-500 uppercase">net</span></p>
              </div>
           </div>
 
@@ -174,7 +175,7 @@ interface UserProfile {
                 <!-- Center Content -->
                 <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
                   <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest leading-none mb-1">Consumed</p>
-                  <p class="text-6xl font-black tracking-tighter text-white leading-none">{{ todayCalories | number }}</p>
+                  <p class="text-6xl font-black tracking-tighter text-white leading-none">{{ todayCalories() | number }}</p>
                   <div class="mt-2 h-[1px] w-12 bg-slate-800"></div>
                   <p class="text-[10px] font-mono text-slate-400 mt-2 uppercase tracking-tighter">
                     {{ remainingCalories() }} remaining
@@ -203,11 +204,11 @@ interface UserProfile {
               <span class="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Protein</span>
             </div>
             <div>
-              <p class="text-4xl font-bold text-white tracking-tighter">{{ todayProtein }}g</p>
+              <p class="text-4xl font-bold text-white tracking-tighter">{{ todayProtein() }}g</p>
               <p class="text-[10px] text-slate-500 mt-1 font-mono uppercase">TARGET: {{ profile().dailyProteinGoal }}g</p>
             </div>
             <div class="h-1 w-full bg-slate-800 rounded-full mt-4">
-              <div class="h-full bg-blue-400" [style.width.%]="(todayProtein / profile().dailyProteinGoal) * 100"></div>
+              <div class="h-full bg-blue-400" [style.width.%]="(todayProtein() / profile().dailyProteinGoal) * 100"></div>
             </div>
           </div>
 
@@ -265,7 +266,7 @@ interface UserProfile {
                   </div>
                   
                   <div class="space-y-1">
-                    @for (meal of recentMeals; track meal.id) {
+                    @for (meal of recentMeals(); track meal.id) {
                       @if (meal.category === cat) {
                         <div class="flex justify-between items-center text-[10px] p-2 bg-slate-950/30 rounded-lg border-l-2" 
                              [class.border-orange-400]="cat === 'breakfast'" 
@@ -834,7 +835,7 @@ interface UserProfile {
                 <lucide-icon name="activity" class="text-slate-800" size="16"></lucide-icon>
              </div>
              <div class="space-y-2">
-                <div *ngFor="let w of recentWorkouts" class="bg-slate-950 border border-slate-800/50 p-4 rounded-2xl flex justify-between items-center">
+                <div *ngFor="let w of recentWorkouts()" class="bg-slate-950 border border-slate-800/50 p-4 rounded-2xl flex justify-between items-center">
                    <div>
                       <p class="text-xs font-bold text-white uppercase">{{ w.name }}</p>
                       <p class="text-[9px] font-mono text-slate-500 uppercase">
@@ -846,7 +847,7 @@ interface UserProfile {
                       <p class="text-[8px] font-mono text-slate-700 uppercase">{{ w.date }}</p>
                    </div>
                 </div>
-                <div *ngIf="recentWorkouts.length === 0" class="py-8 text-center text-slate-700">
+                <div *ngIf="recentWorkouts().length === 0" class="py-8 text-center text-slate-700">
                    <p class="text-[10px] font-mono uppercase tracking-widest">No protocol entries detected</p>
                 </div>
              </div>
@@ -994,13 +995,13 @@ export class HomeComponent implements OnInit {
   ];
   isAnalyzing: boolean = false;
   lastAnalysis: any = null;
-  recentMeals: any[] = [];
-  recentWorkouts: any[] = [];
+  recentMeals = signal<any[]>([]);
+  recentWorkouts = signal<any[]>([]);
   weightLogs = signal<{date: string, weight: number, day: string}[]>([]);
   toasts = signal<{id: number, message: string, type: 'success' | 'error' | 'info'}[]>([]);
-  todayCalories: number = 0;
-  todayProtein: number = 0;
-  todayCaloriesBurned: number = 0;
+  todayCalories = signal<number>(0);
+  todayProtein = signal<number>(0);
+  todayCaloriesBurned = signal<number>(0);
   todayStr = new Date().toISOString().split('T')[0];
   newWeight: number = 0;
 
@@ -1083,11 +1084,11 @@ export class HomeComponent implements OnInit {
   caloriePercentage = computed(() => {
     const goal = this.profile().dailyCalorieGoal;
     if (goal <= 0) return 0;
-    return Math.min(100, Math.round((this.todayCalories / goal) * 100));
+    return Math.min(100, Math.round((this.todayCalories() / goal) * 100));
   });
 
   remainingCalories = computed(() => {
-    const rem = this.profile().dailyCalorieGoal - this.todayCalories;
+    const rem = this.profile().dailyCalorieGoal - this.todayCalories();
     return Math.max(0, rem);
   });
 
@@ -1261,8 +1262,8 @@ export class HomeComponent implements OnInit {
 
   protocolEngagement = computed(() => {
     let score = 0;
-    if (this.todayCalories > 0) score += 35;
-    if (this.recentWorkouts.length > 0) score += 35;
+    if (this.todayCalories() > 0) score += 35;
+    if (this.recentWorkouts().length > 0) score += 35;
     if (this.weightLogs().length > 0) score += 30;
     return score;
   });
@@ -1410,9 +1411,9 @@ export class HomeComponent implements OnInit {
     if (!this.user) return;
     const mealsRef = collection(this.firebase.db, 'meals');
     
-    this.todayCalories = 0;
-    this.todayProtein = 0;
-    this.todayCaloriesBurned = 0;
+    this.todayCalories.set(0);
+    this.todayProtein.set(0);
+    this.todayCaloriesBurned.set(0);
     const todayStr = new Date().toISOString().split('T')[0];
     
     // Load last 30 days for history
@@ -1430,12 +1431,12 @@ export class HomeComponent implements OnInit {
       const data = doc.data();
       mealLogs.push(data);
       if (data['date'] === todayStr) {
-        this.todayCalories += data['calories'] || 0;
-        this.todayProtein += data['protein'] || 0;
+        this.todayCalories.update(v => v + (data['calories'] || 0));
+        this.todayProtein.update(v => v + (data['protein'] || 0));
       }
     });
 
-    this.recentMeals = mealLogs.filter(m => m.date === todayStr);
+    this.recentMeals.set(mealLogs.filter(m => m.date === todayStr));
 
     // Process Weekly Data (last 7 days)
     const weekDays = [];
@@ -1453,7 +1454,7 @@ export class HomeComponent implements OnInit {
     
     const wq = query(collection(this.firebase.db, 'workouts'), where('userId', '==', this.user.uid), orderBy('createdAt', 'desc'), limit(5));
     const wSnapshot = await getDocs(wq);
-    this.recentWorkouts = wSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    this.recentWorkouts.set(wSnapshot.docs.map(d => ({ id: d.id, ...d.data() })));
 
     // Load weight history
     const weightQ = query(
@@ -1476,12 +1477,12 @@ export class HomeComponent implements OnInit {
     const todayWQ = query(collection(this.firebase.db, 'workouts'), where('userId', '==', this.user.uid), where('date', '==', todayStr));
     const todayWSnapshot = await getDocs(todayWQ);
     todayWSnapshot.forEach(d => {
-      this.todayCaloriesBurned += d.data()['caloriesBurned'] || 0;
+      this.todayCaloriesBurned.update(v => v + (d.data()['caloriesBurned'] || 0));
     });
   }
 
   getCaloriesByCategory(category: string): number {
-    return this.recentMeals
+    return this.recentMeals()
       .filter(m => m.category === category)
       .reduce((sum, m) => sum + (m.calories || 0), 0);
   }
