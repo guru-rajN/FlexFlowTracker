@@ -5,7 +5,7 @@ import { GoogleGenAI, Type } from "@google/genai";
   providedIn: 'root'
 })
 export class GeminiService {
-  private ai = new GoogleGenAI({ apiKey: (globalThis as any).GEMINI_API_KEY || '' });
+  private ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
   async analyzeMeal(description: string) {
     const response = await this.ai.models.generateContent({
