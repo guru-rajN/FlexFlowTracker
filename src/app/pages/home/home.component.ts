@@ -374,14 +374,53 @@ interface UserProfile {
 
         <!-- Scanner View (Eat) -->
         <section *ngIf="user && activeTab === 'eat'" class="space-y-6">
-          <div class="bg-white text-slate-950 p-10 rounded-[3rem] shadow-2xl relative overflow-hidden min-h-[460px] flex flex-col justify-end">
-            <div class="relative z-10 space-y-6">
-              <div class="flex items-center gap-2 text-slate-400 font-mono">
-                <lucide-icon name="utensils" size="14"></lucide-icon>
-                <span class="text-[10px] uppercase tracking-[0.2em] font-bold">Neural Scan Alpha</span>
+          <div [class.bg-white]="!isManualMode" [class.text-slate-950]="!isManualMode" [class.bg-slate-900]="isManualMode" [class.text-white]="isManualMode" class="p-10 rounded-[3rem] shadow-2xl relative overflow-hidden min-h-[460px] flex flex-col justify-end transition-colors duration-500">
+            
+            <div *ngIf="!isManualMode" class="relative z-10 space-y-6">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2 text-slate-400 font-mono">
+                  <lucide-icon name="utensils" size="14"></lucide-icon>
+                  <span class="text-[10px] uppercase tracking-[0.2em] font-bold">Neural Scan Alpha</span>
+                </div>
+                <button (click)="isManualMode = true" class="text-[9px] font-black uppercase text-slate-400 border border-slate-200 px-3 py-1 rounded-full hover:bg-slate-50 transition-all">
+                  Manual Entry
+                </button>
               </div>
+
               <h2 class="text-6xl font-black tracking-tighter leading-[0.8] uppercase italic">Visual<br/>Input</h2>
               
+              <!-- Last Result Card -->
+              <div *ngIf="lastAnalysis" class="bg-lime-400/10 border border-lime-400/20 p-6 rounded-3xl animate-in fade-in zoom-in duration-500">
+                 <div class="flex justify-between items-start mb-4">
+                    <div>
+                       <p class="text-[8px] font-bold text-lime-600 uppercase tracking-widest">Protocol Verified</p>
+                       <p class="text-2xl font-black text-slate-900 uppercase italic">{{ lastAnalysis.name }}</p>
+                    </div>
+                    <button (click)="lastAnalysis = null" class="p-1 hover:bg-lime-400/20 rounded-full transition-colors">
+                       <lucide-icon name="plus" class="rotate-45 text-slate-400" size="16"></lucide-icon>
+                    </button>
+                 </div>
+                 <div class="grid grid-cols-4 gap-2">
+                    <div class="text-center">
+                       <p class="text-[7px] text-slate-500 font-bold uppercase">Kcal</p>
+                       <p class="text-sm font-black text-slate-900">{{ lastAnalysis.calories }}</p>
+                    </div>
+                    <div class="text-center">
+                       <p class="text-[7px] text-slate-500 font-bold uppercase">Prot</p>
+                       <p class="text-sm font-black text-slate-900">{{ lastAnalysis.protein }}g</p>
+                    </div>
+                    <div class="text-center">
+                       <p class="text-[7px] text-slate-500 font-bold uppercase">Carb</p>
+                       <p class="text-sm font-black text-slate-900">{{ lastAnalysis.carbs }}g</p>
+                    </div>
+                    <div class="text-center">
+                       <p class="text-[7px] text-slate-500 font-bold uppercase">Fat</p>
+                       <p class="text-sm font-black text-slate-900">{{ lastAnalysis.fats }}g</p>
+                    </div>
+                 </div>
+                 <p class="text-[9px] text-slate-500 mt-4 leading-tight italic">{{ lastAnalysis.explanation }}</p>
+              </div>
+
               <div *ngIf="selectedImage" class="relative group w-40 h-40 bg-slate-100 rounded-3xl overflow-hidden shadow-lg mb-4 border-4 border-slate-200">
                  <img [src]="selectedImage" class="absolute inset-0 w-full h-full object-cover" />
                  <button (click)="selectedImage = null" class="absolute top-2 right-2 bg-slate-950/50 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
@@ -416,13 +455,59 @@ interface UserProfile {
               </div>
               <p *ngIf="isAnalyzing" class="text-xs font-mono text-slate-400 animate-pulse tracking-widest uppercase">Initializing multimodel analysis via Gemini_3.0...</p>
             </div>
-            <div class="absolute -right-12 -top-12 text-slate-100 rotate-12 opacity-50 pointer-events-none">
+
+            <!-- Manual Entry Interface -->
+            <div *ngIf="isManualMode" class="relative z-10 space-y-6 animate-in slide-in-from-right-4 duration-500">
+               <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2 text-slate-500 font-mono text-balance">
+                    <lucide-icon name="plus" size="14"></lucide-icon>
+                    <span class="text-[10px] uppercase tracking-[0.2em] font-bold">Manual override</span>
+                  </div>
+                  <button (click)="isManualMode = false" class="text-[9px] font-black uppercase text-slate-500 border border-slate-800 px-3 py-1 rounded-full hover:text-white transition-all">
+                    Back to Scan
+                  </button>
+                </div>
+                
+                <h2 class="text-5xl font-black tracking-tighter leading-[0.8] uppercase italic text-white">Manual<br/>Log</h2>
+                
+                <div class="space-y-4">
+                  <input type="text" [(ngModel)]="manualName" placeholder="Meal Name..." class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-6 py-4 text-white font-mono placeholder:text-slate-800 focus:border-lime-400 outline-none transition-colors uppercase" />
+                  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div class="space-y-1">
+                      <label class="text-[8px] font-bold text-slate-500 uppercase tracking-widest px-2">Kcal</label>
+                      <input type="number" [(ngModel)]="manualCalories" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white font-mono text-center focus:border-lime-400 outline-none" />
+                    </div>
+                    <div class="space-y-1">
+                      <label class="text-[8px] font-bold text-slate-500 uppercase tracking-widest px-2">Prot (g)</label>
+                      <input type="number" [(ngModel)]="manualProtein" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white font-mono text-center focus:border-lime-400 outline-none" />
+                    </div>
+                    <div class="space-y-1">
+                      <label class="text-[8px] font-bold text-slate-500 uppercase tracking-widest px-2">Carb (g)</label>
+                      <input type="number" [(ngModel)]="manualCarbs" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white font-mono text-center focus:border-lime-400 outline-none" />
+                    </div>
+                    <div class="space-y-1">
+                      <label class="text-[8px] font-bold text-slate-500 uppercase tracking-widest px-2">Fat (g)</label>
+                      <input type="number" [(ngModel)]="manualFats" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white font-mono text-center focus:border-lime-400 outline-none" />
+                    </div>
+                  </div>
+                </div>
+
+                <button 
+                  (click)="manualLog()" 
+                  [disabled]="!manualName"
+                  class="w-full bg-blue-500 text-slate-950 px-8 py-5 rounded-2xl font-black tracking-widest uppercase italic hover:bg-white transition-all disabled:opacity-20 active:scale-95"
+                >
+                  Log Entry
+                </button>
+            </div>
+
+            <div class="absolute -right-12 -top-12 text-slate-100 rotate-12 opacity-5 pointer-events-none transition-opacity duration-500" [class.opacity-[0.15]]="!isManualMode">
                <lucide-icon name="flame" size="340"></lucide-icon>
             </div>
           </div>
 
           <!-- Quick Actions -->
-          <div class="grid grid-cols-2 gap-4">
+          <div *ngIf="!isManualMode" class="grid grid-cols-2 gap-4">
              <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl">
                 <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-3">Recent Suggestions</p>
                 <div class="flex flex-wrap gap-2">
@@ -431,9 +516,9 @@ interface UserProfile {
                    <button (click)="mealInput = 'Protein Shake'" class="px-3 py-2 bg-slate-950 rounded-xl text-[10px] font-mono text-slate-300 border border-slate-800 uppercase">Protein Shake</button>
                 </div>
              </div>
-             <div class="bg-slate-950/30 border border-slate-900 p-6 rounded-3xl flex flex-col justify-center items-center text-center">
+             <div (click)="isManualMode = true" class="bg-slate-950/30 border border-slate-900 p-6 rounded-3xl flex flex-col justify-center items-center text-center cursor-pointer hover:bg-slate-900 transition-colors">
                 <lucide-icon name="plus" class="text-slate-800 mb-2" size="32"></lucide-icon>
-                <p class="text-[9px] font-bold text-slate-700 uppercase tracking-widest leading-tight">Manual entry<br/>API disabled</p>
+                <p class="text-[9px] font-bold text-slate-700 uppercase tracking-widest leading-tight">Manual entry<br/>Enabled</p>
              </div>
           </div>
         </section>
@@ -717,6 +802,7 @@ export class HomeComponent implements OnInit {
     { name: 'Core', icon: 'shield', items: ['Plank', 'Leg Raises', 'Russian Twists', 'Sit-ups', 'Burpees'] }
   ];
   isAnalyzing: boolean = false;
+  lastAnalysis: any = null;
   recentMeals: any[] = [];
   recentWorkouts: any[] = [];
   weightLogs = signal<{date: string, weight: number, day: string}[]>([]);
@@ -726,6 +812,14 @@ export class HomeComponent implements OnInit {
   todayCaloriesBurned: number = 0;
   todayStr = new Date().toISOString().split('T')[0];
   newWeight: number = 0;
+
+  // Manual entry fields
+  manualName: string = '';
+  manualCalories: number = 0;
+  manualProtein: number = 0;
+  manualCarbs: number = 0;
+  manualFats: number = 0;
+  isManualMode: boolean = false;
 
   profile = signal<UserProfile>({
     uid: '',
@@ -899,6 +993,7 @@ export class HomeComponent implements OnInit {
   async analyzeMeal() {
     if ((!this.mealInput && !this.selectedImage) || !this.user) return;
     this.isAnalyzing = true;
+    this.lastAnalysis = null;
     try {
       let res;
       if (this.selectedImage) {
@@ -909,6 +1004,7 @@ export class HomeComponent implements OnInit {
       }
 
       if (res && res.calories) {
+        this.lastAnalysis = res;
         await addDoc(collection(this.firebase.db, 'meals'), {
           userId: this.user.uid,
           name: res.name,
@@ -922,7 +1018,6 @@ export class HomeComponent implements OnInit {
         this.mealInput = '';
         this.selectedImage = null;
         this.loadData();
-        this.activeTab = 'dash';
         this.showToast(`Logged: ${res.name} (${res.calories} kcal)`);
       }
     } catch (e) { 
@@ -930,6 +1025,33 @@ export class HomeComponent implements OnInit {
       this.showToast('Bio-analysis failed', 'error');
     }
     finally { this.isAnalyzing = false; }
+  }
+
+  async manualLog() {
+    if (!this.manualName || !this.user) return;
+    try {
+      await addDoc(collection(this.firebase.db, 'meals'), {
+        userId: this.user.uid,
+        name: this.manualName,
+        calories: this.manualCalories,
+        protein: this.manualProtein,
+        carbs: this.manualCarbs,
+        fats: this.manualFats,
+        createdAt: Timestamp.now(),
+        date: new Date().toISOString().split('T')[0]
+      });
+      this.showToast(`Logged: ${this.manualName}`);
+      this.loadData();
+      this.isManualMode = false;
+      this.manualName = '';
+      this.manualCalories = 0;
+      this.manualProtein = 0;
+      this.manualCarbs = 0;
+      this.manualFats = 0;
+      this.activeTab = 'dash';
+    } catch (e) {
+      this.showToast('Manual log failed', 'error');
+    }
   }
 
   async createWorkout() {

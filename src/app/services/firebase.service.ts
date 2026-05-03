@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { initializeApp } from 'firebase/app';
-import { getAuth, Auth } from 'firebase/auth';
+import { initializeApp, getApp, getApps, FirebaseApp } from 'firebase/app';
+import { getAuth, Auth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, Firestore, doc, getDocFromServer, setDoc, getDoc } from 'firebase/firestore';
 import firebaseConfig from '../../../firebase-applet-config.json';
 
@@ -34,11 +34,15 @@ interface FirestoreErrorInfo {
   providedIn: 'root'
 })
 export class FirebaseService {
-  public app = initializeApp(firebaseConfig);
-  public auth: Auth = getAuth(this.app);
-  public db: Firestore = getFirestore(this.app, (firebaseConfig as any).firestoreDatabaseId);
+  public app: FirebaseApp;
+  public auth: Auth;
+  public db: Firestore;
 
   constructor() {
+    console.log('Initializing Firebase Protocol...');
+    this.app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+    this.auth = getAuth(this.app);
+    this.db = getFirestore(this.app, (firebaseConfig as any).firestoreDatabaseId);
     this.testConnection();
   }
 
