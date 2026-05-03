@@ -1,6 +1,6 @@
 import { Component, OnInit, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { ReactiveFormsModule, FormControl, Validators, FormGroup } from '@angular/forms';
 import { FirebaseService } from '../../services/firebase.service';
 import { GeminiService } from '../../services/gemini.service';
 import { signInWithPopup, GoogleAuthProvider, User } from 'firebase/auth';
@@ -24,7 +24,7 @@ interface UserProfile {
   standalone: true,
   imports: [
     CommonModule, 
-    FormsModule, 
+    ReactiveFormsModule, 
     LucideAngularModule
   ],
   template: `
@@ -86,7 +86,7 @@ interface UserProfile {
         <div *ngIf="user && activeTab === 'dash'" class="grid grid-cols-1 md:grid-cols-4 gap-4">
           
           <!-- BMI & Stats Row -->
-          <div class="md:col-span-4 grid grid-cols-2 md:col-span-4 md:grid-cols-6 gap-4 mb-2">
+          <div class="md:col-span-4 grid grid-cols-2 md:grid-cols-6 gap-4 mb-2">
              <div class="bg-slate-900/50 border border-slate-800 p-4 rounded-2xl">
                 <p class="text-[9px] uppercase tracking-[0.2em] text-slate-500 font-bold mb-1">BMI Score</p>
                 <p class="text-2xl font-black text-white tracking-tighter">{{ bmi().toFixed(1) }}</p>
@@ -300,28 +300,34 @@ interface UserProfile {
                       <lucide-icon [name]="showTestimonyForm() ? 'plus' : 'award'" [class.rotate-45]="showTestimonyForm()" size="12"></lucide-icon>
                       {{ showTestimonyForm() ? 'Cancel' : 'Submit Review' }}
                    </button>
-                   <button (click)="seedTestimonials()" *ngIf="testimonials().length === 0" class="text-[9px] bg-lime-400 text-black px-4 py-2 rounded-xl font-bold uppercase tracking-widest hover:bg-white transition-all">Initialize Logs</button>
+                   @if (testimonials().length === 0) {
+                      <button (click)="seedTestimonials()" class="text-[9px] bg-lime-400 text-black px-4 py-2 rounded-xl font-bold uppercase tracking-widest hover:bg-white transition-all">Initialize Logs</button>
+                   }
                 </div>
              </div>
              
              <!-- Submission Form -->
-             <div *ngIf="showTestimonyForm()" class="mb-8 p-8 bg-slate-900 border border-lime-400/20 rounded-[2.5rem] animate-in zoom-in duration-300">
-                <h4 class="text-white text-sm font-black uppercase italic mb-4">New_Protocol_Feedback</h4>
-                <div class="space-y-4">
-                   <textarea [(ngModel)]="newTestimony.content" placeholder="DESCRIBE YOUR PROTOCOL EXPERIENCE..." class="w-full bg-slate-950 border border-slate-800 rounded-2xl p-6 text-xs text-white font-mono placeholder:text-slate-800 focus:border-lime-400 outline-none transition-all uppercase" rows="3"></textarea>
-                   <div class="flex justify-between items-center">
-                      <div class="flex items-center gap-3">
-                         <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Score:</span>
-                         <div class="flex gap-1">
-                            <button *ngFor="let s of [1,2,3,4,5]" (click)="newTestimony.rating = s" class="p-1 hover:scale-110 transition-transform">
-                               <lucide-icon name="star" size="14" [class.text-lime-400]="s <= newTestimony.rating" [class.text-slate-800]="s > newTestimony.rating"></lucide-icon>
-                            </button>
-                         </div>
-                      </div>
-                      <button (click)="submitTestimony()" [disabled]="!newTestimony.content" class="px-8 py-3 bg-lime-400 text-slate-950 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-white transition-all disabled:opacity-20 active:scale-95">Upload Review</button>
-                   </div>
-                </div>
-             </div>
+             @if (showTestimonyForm()) {
+              <div class="mb-8 p-8 bg-slate-900 border border-lime-400/20 rounded-[2.5rem] animate-in zoom-in duration-300">
+                  <h4 class="text-white text-sm font-black uppercase italic mb-4">New_Protocol_Feedback</h4>
+                  <div class="space-y-4" [formGroup]="testimonyForm">
+                    <textarea formControlName="content" placeholder="DESCRIBE YOUR PROTOCOL EXPERIENCE..." class="w-full bg-slate-950 border border-slate-800 rounded-2xl p-6 text-xs text-white font-mono placeholder:text-slate-800 focus:border-lime-400 outline-none transition-all uppercase" rows="3"></textarea>
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                          <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Score:</span>
+                          <div class="flex gap-1">
+                              @for (s of [1,2,3,4,5]; track s) {
+                                <button (click)="testimonyRating.set(s)" class="p-1 hover:scale-110 transition-transform">
+                                  <lucide-icon name="star" size="14" [class.text-lime-400]="s <= testimonyRating()" [class.text-slate-800]="s > testimonyRating()"></lucide-icon>
+                                </button>
+                              }
+                          </div>
+                        </div>
+                        <button (click)="submitTestimony()" [disabled]="testimonyForm.invalid" class="px-8 py-3 bg-lime-400 text-slate-950 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-white transition-all disabled:opacity-20 active:scale-95">Upload Review</button>
+                    </div>
+                  </div>
+              </div>
+             }
 
              <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 @for (test of displayedTestimonials(); track test.id) {
@@ -957,7 +963,9 @@ export class HomeComponent implements OnInit {
   activeTestimonyIndex = signal<number>(0);
   displayedTestimonials = computed(() => {
     const all = this.testimonials();
+    if (all.length === 0) return [];
     if (all.length <= 3) return all;
+    // Window rotation by 1 every tick
     const start = this.activeTestimonyIndex();
     const result = [];
     for (let i = 0; i < 3; i++) {
@@ -966,7 +974,10 @@ export class HomeComponent implements OnInit {
     return result;
   });
   showTestimonyForm = signal<boolean>(false);
-  newTestimony = { content: '', rating: 5 };
+  testimonyRating = signal<number>(5);
+  testimonyForm = new FormGroup({
+    content: new FormControl('', [Validators.required, Validators.maxLength(1000)])
+  });
   mealInput: string = '';
   mealCategory: 'breakfast' | 'lunch' | 'dinner' | 'snacks' = 'breakfast';
   selectedImage: string | null = null;
@@ -1140,13 +1151,16 @@ export class HomeComponent implements OnInit {
           this.testimonials.set(sorted);
         });
 
-        // Testimonial Rotation Logic
-        setInterval(() => {
-          const count = this.testimonials().length;
-          if (count > 3) {
-            this.activeTestimonyIndex.update(i => (i + 1) % count);
-          }
-        }, 5000);
+                // Testimonial Rotation Logic
+                const interval = setInterval(() => {
+                  const count = this.testimonials().length;
+                  if (count > 3) {
+                    this.activeTestimonyIndex.update(i => (i + 1) % count);
+                  }
+                }, 8000);
+                
+                // Cleanup interval on logout or destroy if we had a way, 
+                // but for now it's okay in this component
       } else {
         this.user = null;
       }
@@ -1163,9 +1177,18 @@ export class HomeComponent implements OnInit {
 
   async login() {
     try {
-      await signInWithPopup(this.firebase.auth, new GoogleAuthProvider());
+      const provider = new GoogleAuthProvider();
+      // Adding custom parameters can sometimes help with popup window issues
+      provider.setCustomParameters({ prompt: 'select_account' });
+      await signInWithPopup(this.firebase.auth, provider);
       this.firebase.updateSessionTimestamp();
-    } catch (e) { console.error(e); }
+    } catch (e: any) { 
+      console.error('Login Error:', e);
+      // Fallback for COOP/Popup issues in some dev environments
+      if (e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user' || e.message?.includes('Cross-Origin-Opener-Policy')) {
+        this.showToast('Auth error detected. Please try again or check browser settings.', 'error');
+      }
+    }
   }
 
   logout() { this.firebase.clearSession(); }
@@ -1245,17 +1268,18 @@ export class HomeComponent implements OnInit {
   });
 
   async submitTestimony() {
-    if (!this.user || !this.newTestimony.content) return;
+    if (!this.user || this.testimonyForm.invalid) return;
     try {
       await addDoc(collection(this.firebase.db, 'testimonials'), {
         userName: this.user.displayName || 'Anonymous_Human',
-        content: this.newTestimony.content,
-        rating: this.newTestimony.rating,
+        content: this.testimonyForm.value.content,
+        rating: this.testimonyRating(),
         role: 'Verified Human',
         createdAt: new Date().toISOString()
       });
       this.showTestimonyForm.set(false);
-      this.newTestimony = { content: '', rating: 5 };
+      this.testimonyForm.reset();
+      this.testimonyRating.set(5);
       this.showToast('Testimony uploaded to protocol');
     } catch (e) {
       this.showToast('Upload failed', 'error');
