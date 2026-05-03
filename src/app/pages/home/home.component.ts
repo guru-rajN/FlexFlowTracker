@@ -6,7 +6,7 @@ import { GeminiService } from '../../services/gemini.service';
 import { signInWithPopup, GoogleAuthProvider, User } from 'firebase/auth';
 import { collection, addDoc, query, where, getDocs, orderBy, limit, Timestamp } from 'firebase/firestore';
 import { LucideAngularModule } from 'lucide-angular';
-import { Flame, Utensils, Award, Plus, Trash2, ChevronRight, Activity, Camera, User as UserIcon, Settings, LogOut, Dumbbell, Shield } from 'lucide-angular';
+import { Flame, Utensils, Award, Plus, Trash2, ChevronRight, Activity, Camera, User as UserIcon, Settings, LogOut, Dumbbell, Shield, Linkedin } from 'lucide-angular';
 
 interface UserProfile {
   uid: string;
@@ -819,9 +819,10 @@ interface UserProfile {
             <p class="text-[9px] font-mono text-slate-500 uppercase tracking-widest">
               Neural Optimization for High-Performance Humans
             </p>
-            <p class="text-[9px] font-mono text-slate-400 uppercase tracking-widest">
-              Founder & Architect: <span class="text-lime-400 font-bold">Guru_Raj_N</span>
-            </p>
+            <a href="https://www.linkedin.com/in/guru-raj-n-741a65145/" target="_blank" class="text-[9px] font-mono text-slate-400 uppercase tracking-widest hover:text-lime-400 transition-colors flex items-center justify-center gap-2 group">
+              Founder & Architect: <span class="text-lime-400 font-bold border-b border-transparent group-hover:border-lime-400/30 transition-all">Guru_Raj_N</span>
+              <lucide-icon name="linkedin" size="10"></lucide-icon>
+            </a>
             <p class="text-[9px] font-mono text-slate-400 uppercase tracking-widest">
               Global Protocol Connections: <span class="text-white font-bold">{{ userCount() }}</span>
             </p>
@@ -845,7 +846,10 @@ interface UserProfile {
       </nav>
       
       <footer *ngIf="user" class="fixed bottom-0 left-0 right-0 p-4 flex justify-between text-[8px] font-mono text-slate-800 pointer-events-none tracking-[0.3em] uppercase">
-        <span>FlexFlow Protocol v2.5.0 // Architect: Guru_Raj_N</span>
+        <a href="https://www.linkedin.com/in/guru-raj-n-741a65145/" target="_blank" class="hover:text-lime-400 transition-colors pointer-events-auto flex items-center gap-2">
+          FlexFlow Protocol v2.5.0 // Architect: Guru_Raj_N
+          <lucide-icon name="linkedin" size="8" class="mb-0.5"></lucide-icon>
+        </a>
         <span class="text-lime-500/50">ACTIVE_NODES: {{ userCount() }} // BMI_ENG_INIT: SUCCESS</span>
       </footer>
     </div>
