@@ -88,27 +88,81 @@ interface UserProfile {
              </div>
           </div>
 
-          <!-- Calorie KPI (Large) -->
-          <div class="md:col-span-2 md:row-span-2 bg-slate-900 border border-slate-800 rounded-[2.5rem] p-8 flex flex-col justify-between min-h-[320px]">
-            <div>
-              <div class="flex justify-between items-start">
-                <h3 class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Daily Energy</h3>
-                <span class="bg-lime-400/10 text-lime-400 text-[10px] font-mono px-2 py-1 rounded-full border border-lime-400/20 uppercase">
-                  {{ (todayCalories / profile().dailyCalorieGoal * 100) | number:'1.0-0' }}% GOAL
-                </span>
+          <!-- Calorie KPI (Large Circle) -->
+          <div class="md:col-span-2 md:row-span-2 bg-slate-900 border border-slate-800 rounded-[2.5rem] p-8 flex flex-col items-center justify-center min-h-[360px] relative overflow-hidden group">
+            <div class="absolute inset-0 bg-lime-400/[0.02] scale-0 group-hover:scale-100 transition-transform duration-700 rounded-full"></div>
+            
+            <div class="relative z-10 w-full flex flex-col items-center">
+              <div class="flex justify-between items-center w-full mb-8">
+                <h3 class="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em]">Energy Matrix</h3>
+                <div class="flex flex-col items-end">
+                   <span class="text-[10px] font-mono text-lime-400 leading-none">GOAL_SYNC</span>
+                   <span class="text-[8px] font-mono text-slate-700 uppercase">{{ todayStr }}</span>
+                </div>
               </div>
-              <div class="mt-8 flex items-baseline gap-2">
-                <span class="text-7xl font-black tracking-tighter text-white">{{ todayCalories | number }}</span>
-                <span class="text-xl text-slate-500 font-medium uppercase leading-none">kcal</span>
+
+              <!-- Main Progress Circle -->
+              <div class="relative w-64 h-64 flex items-center justify-center">
+                <svg class="w-full h-full -rotate-90 transform">
+                  <!-- Background Track -->
+                  <circle
+                    cx="128"
+                    cy="128"
+                    r="110"
+                    stroke="currentColor"
+                    stroke-width="12"
+                    fill="transparent"
+                    class="text-slate-800/50"
+                  />
+                  <!-- Progress Glow -->
+                  <circle
+                    cx="128"
+                    cy="128"
+                    r="110"
+                    stroke="currentColor"
+                    stroke-width="12"
+                    fill="transparent"
+                    [attr.stroke-dasharray]="circumference"
+                    [attr.stroke-dashoffset]="strokeOffset()"
+                    stroke-linecap="round"
+                    class="text-lime-400/20 blur-sm transition-all duration-1000 ease-out"
+                  />
+                  <!-- Main Progress -->
+                  <circle
+                    cx="128"
+                    cy="128"
+                    r="110"
+                    stroke="currentColor"
+                    stroke-width="12"
+                    fill="transparent"
+                    [attr.stroke-dasharray]="circumference"
+                    [attr.stroke-dashoffset]="strokeOffset()"
+                    stroke-linecap="round"
+                    class="text-lime-400 transition-all duration-1000 ease-out"
+                  />
+                </svg>
+
+                <!-- Center Content -->
+                <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+                  <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest leading-none mb-1">Consumed</p>
+                  <p class="text-6xl font-black tracking-tighter text-white leading-none">{{ todayCalories | number }}</p>
+                  <div class="mt-2 h-[1px] w-12 bg-slate-800"></div>
+                  <p class="text-[10px] font-mono text-slate-400 mt-2 uppercase tracking-tighter">
+                    {{ remainingCalories() }} remaining
+                  </p>
+                </div>
               </div>
-            </div>
-            <div class="space-y-4">
-              <div class="h-3 w-full bg-slate-800 rounded-full overflow-hidden">
-                <div class="h-full bg-lime-400 transition-all duration-1000 ease-out" [style.width.%]="(todayCalories / profile().dailyCalorieGoal) * 100"></div>
-              </div>
-              <div class="flex justify-between text-[10px] font-mono text-slate-500 uppercase">
-                <span>0 UNIT</span>
-                <span class="text-slate-300">TARGET: {{ profile().dailyCalorieGoal | number }}</span>
+
+              <!-- Bottom Stats -->
+              <div class="grid grid-cols-2 w-full mt-10 gap-4">
+                 <div class="bg-slate-950/50 p-3 rounded-2xl border border-slate-800/50">
+                    <p class="text-[8px] font-bold text-slate-600 uppercase tracking-widest mb-1">Target</p>
+                    <p class="text-lg font-black text-white tracking-tighter">{{ profile().dailyCalorieGoal | number }}</p>
+                 </div>
+                 <div class="bg-slate-950/50 p-3 rounded-2xl border border-slate-800/50">
+                    <p class="text-[8px] font-bold text-slate-600 uppercase tracking-widest mb-1">Completion</p>
+                    <p class="text-lg font-black text-lime-400 tracking-tighter">{{ caloriePercentage() }}%</p>
+                 </div>
               </div>
             </div>
           </div>
@@ -505,6 +559,23 @@ export class HomeComponent implements OnInit {
     if (cat?.name === 'Core') base = 10;
     
     return this.workoutSets * base;
+  });
+
+  caloriePercentage = computed(() => {
+    const goal = this.profile().dailyCalorieGoal;
+    if (goal <= 0) return 0;
+    return Math.min(100, Math.round((this.todayCalories / goal) * 100));
+  });
+
+  remainingCalories = computed(() => {
+    const rem = this.profile().dailyCalorieGoal - this.todayCalories;
+    return Math.max(0, rem);
+  });
+
+  circumference = 2 * Math.PI * 110;
+  strokeOffset = computed(() => {
+    const percent = this.caloriePercentage();
+    return this.circumference - (percent / 100) * this.circumference;
   });
 
   navTabs = [
