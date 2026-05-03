@@ -1,0 +1,6 @@
+{
+  "name": "FlexFlow Tracker",
+  "description": "A comprehensive calorie and workout tracker with AI-powered meal logging and progress visualization.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["AI Food Logging", "Workout Progress Tracking", "Calorie Analytics"]
+}

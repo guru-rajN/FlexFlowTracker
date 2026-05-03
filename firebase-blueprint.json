@@ -1,0 +1,99 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Storage for user goals and personal information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "dailyCalorieGoal": { "type": "number" },
+        "dailyProteinGoal": { "type": "number" },
+        "weight": { "type": "number" },
+        "height": { "type": "number" },
+        "age": { "type": "number" },
+        "gender": { "type": "string", "enum": ["male", "female", "other"] },
+        "activityLevel": { "type": "string", "enum": ["sedentary", "light", "moderate", "active", "very_active"] },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "dailyCalorieGoal"]
+    },
+    "MealLog": {
+      "title": "Meal Log",
+      "description": "Daily food intake record",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "name": { "type": "string" },
+        "calories": { "type": "number" },
+        "protein": { "type": "number" },
+        "carbs": { "type": "number" },
+        "fats": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "date", "name", "calories"]
+    },
+    "Workout": {
+      "title": "Workout Session",
+      "description": "Record of a gym or home workout",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "name": { "type": "string" },
+        "sets": { "type": "number" },
+        "reps": { "type": "number" },
+        "weightLifted": { "type": "number" },
+        "caloriesBurned": { "type": "number" },
+        "duration": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "date", "name"]
+    },
+    "Exercise": {
+      "title": "Exercise",
+      "description": "Individual exercise within a workout",
+      "type": "object",
+      "properties": {
+        "workoutId": { "type": "string" },
+        "name": { "type": "string" },
+        "notes": { "type": "string" }
+      },
+      "required": ["workoutId", "name"]
+    },
+    "Set": {
+      "title": "Set",
+      "description": "Individual set of an exercise",
+      "type": "object",
+      "properties": {
+        "exerciseId": { "type": "string" },
+        "reps": { "type": "number" },
+        "weight": { "type": "number" }
+      },
+      "required": ["exerciseId", "reps", "weight"]
+    }
+  },
+  "firestore": {
+    "profiles": {
+      "schema": "UserProfile",
+      "description": "User profile collection"
+    },
+    "meals": {
+      "schema": "MealLog",
+      "description": "Meal logs collection"
+    },
+    "workouts": {
+      "schema": "Workout",
+      "description": "Workout sessions collection"
+    },
+    "workouts/{workoutId}/exercises": {
+      "schema": "Exercise",
+      "description": "Exercises in a workout"
+    },
+    "workouts/{workoutId}/exercises/{exerciseId}/sets": {
+      "schema": "Set",
+      "description": "Sets for an exercise"
+    }
+  }
+}
