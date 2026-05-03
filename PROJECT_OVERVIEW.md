@@ -67,6 +67,7 @@ graph TD
     *   `userId`: String (Owner)
     *   `date`: String (YYYY-MM-DD)
     *   `name`: String
+    *   `category`: Enum (breakfast, lunch, dinner, snacks)
     *   `calories`: Number
     *   `protein`: Number
     *   `carbs`: Number
@@ -115,6 +116,22 @@ Data is protected by the **Fortress Security Protocol** (Firestore Rules):
 1.  **Identity Lock:** Users can only read/write documents where `userId == request.auth.uid`.
 2.  **Schema Validation:** All writes are validated against internal schemas to prevent "Denial of Wallet" and data corruption.
 3.  **PII Isolation:** User metadata is strictly separated from anonymized telemetry.
+
+---
+
+## 6. Local Development & Deployment
+To run this project locally in VS Code:
+1.  **Dependencies:** Run `npm install`.
+2.  **Environment:** Ensure `firebase-applet-config.json` is present in the root.
+3.  **Firebase Authorization:** 
+    *   Go to **Firebase Console > Authentication > Settings > Authorized Domains**.
+    *   Add `localhost` to the list to enable login during local development.
+4.  **Start:** Run `npm start`.
+
+## 7. Mobile Considerations
+*   **Authentication:** Uses `signInWithPopup`. Ensure pop-up blockers are disabled on mobile browsers.
+*   **Layout:** The UI uses Tailwind's responsive utilities (`md:grid-cols-4`, etc.) to collapse dashboards into a single-column scrollable feed on mobile devices.
+*   **Touch Targets:** Interactive elements are optimized for touch (min 44px height).
 
 ---
 *© 2026 FlexFlow Protocol // Architect: Guru_Raj_N*

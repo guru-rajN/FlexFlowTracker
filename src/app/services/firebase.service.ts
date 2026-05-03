@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { initializeApp, getApp, getApps, FirebaseApp } from 'firebase/app';
-import { getAuth, Auth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, Firestore, doc, getDocFromServer, setDoc, getDoc } from 'firebase/firestore';
+import { getAuth, Auth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, setPersistence, browserLocalPersistence } from 'firebase/auth';
+import { getFirestore, Firestore, doc, getDocFromServer, setDoc, getDoc, updateDoc, increment, onSnapshot } from 'firebase/firestore';
 import firebaseConfig from '../../../firebase-applet-config.json';
 
 enum OperationType {
@@ -42,8 +42,28 @@ export class FirebaseService {
     console.log('Initializing Firebase Protocol...');
     this.app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
     this.auth = getAuth(this.app);
+    // Ensure persistence is set to local (survives refresh)
+    setPersistence(this.auth, browserLocalPersistence).catch(err => {
+      console.warn('Auth persistence initialization error:', err);
+    });
     this.db = getFirestore(this.app, (firebaseConfig as any).firestoreDatabaseId);
     this.testConnection();
+  }
+
+  updateSessionTimestamp() {
+    localStorage.setItem('flexflow_last_active', Date.now().toString());
+  }
+
+  isSessionExpired(): boolean {
+    const lastActive = localStorage.getItem('flexflow_last_active');
+    if (!lastActive) return false;
+    const thirtyMinutes = 30 * 60 * 1000;
+    return (Date.now() - parseInt(lastActive, 10)) > thirtyMinutes;
+  }
+
+  clearSession() {
+    localStorage.removeItem('flexflow_last_active');
+    return this.auth.signOut();
   }
 
   handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
@@ -92,9 +112,62 @@ export class FirebaseService {
   async saveProfile(uid: string, data: any) {
     const path = `profiles/${uid}`;
     try {
-      await setDoc(doc(this.db, path), { ...data, uid, updatedAt: new Date().toISOString() }, { merge: true });
+      const existing = await this.getProfile(uid);
+      const isNew = !existing;
+      const wasAlreadyCounted = existing && (existing as any).isCounted;
+      
+      const profileData = { 
+        ...data, 
+        uid, 
+        updatedAt: new Date().toISOString(),
+        isCounted: isNew || wasAlreadyCounted ? true : false // We will set it to true if we increment
+      };
+
+      if (isNew || !wasAlreadyCounted) {
+        profileData.isCounted = true;
+        await this.incrementUserCount();
+      }
+
+      await setDoc(doc(this.db, path), profileData, { merge: true });
     } catch (err) {
       this.handleFirestoreError(err, OperationType.WRITE, path);
     }
+  }
+
+  async checkIn(uid: string) {
+    const p = await this.getProfile(uid);
+    if (p && !(p as any).isCounted) {
+      // User has profile but wasn't counted (migration case)
+      await updateDoc(doc(this.db, `profiles/${uid}`), { isCounted: true });
+      await this.incrementUserCount();
+    }
+  }
+
+  async incrementUserCount() {
+    const path = 'stats/global';
+    const docRef = doc(this.db, path);
+    try {
+      const snap = await getDoc(docRef);
+      if (!snap.exists()) {
+        await setDoc(docRef, { userCount: 1 });
+      } else {
+        await updateDoc(docRef, { userCount: increment(1) });
+      }
+    } catch (err) {
+      console.warn('Could not increment user count:', err);
+    }
+  }
+
+  watchUserCount(callback: (count: number) => void) {
+    const path = 'stats/global';
+    return onSnapshot(doc(this.db, path), (snap) => {
+      if (snap.exists()) {
+        callback(snap.data()['userCount'] || 0);
+      } else {
+        callback(0);
+      }
+    }, (err) => {
+      console.warn('Watch user count failed:', err);
+    });
   }
 }

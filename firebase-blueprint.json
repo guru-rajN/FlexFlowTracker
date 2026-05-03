@@ -1,5 +1,15 @@
 {
   "entities": {
+    "GlobalStats": {
+      "title": "Global Metrics",
+      "description": "Aggregated application telemetry",
+      "type": "object",
+      "properties": {
+        "userCount": { "type": "number" },
+        "activeProtocols": { "type": "number" }
+      },
+      "required": ["userCount"]
+    },
     "WeightLog": {
       "title": "Weight Entry",
       "description": "Snapshots of user body weight over time",
@@ -19,6 +29,7 @@
       "properties": {
         "uid": { "type": "string" },
         "displayName": { "type": "string" },
+        "isCounted": { "type": "boolean" },
         "dailyCalorieGoal": { "type": "number" },
         "dailyProteinGoal": { "type": "number" },
         "weight": { "type": "number" },
@@ -38,13 +49,14 @@
         "userId": { "type": "string" },
         "date": { "type": "string", "format": "date" },
         "name": { "type": "string" },
+        "category": { "type": "string", "enum": ["breakfast", "lunch", "dinner", "snacks"] },
         "calories": { "type": "number" },
         "protein": { "type": "number" },
         "carbs": { "type": "number" },
         "fats": { "type": "number" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["userId", "date", "name", "calories"]
+      "required": ["userId", "date", "name", "calories", "category"]
     },
     "Workout": {
       "title": "Workout Session",
@@ -110,6 +122,10 @@
     "weightLogs": {
       "schema": "WeightLog",
       "description": "Historical body weight tracking"
+    },
+    "stats": {
+      "schema": "GlobalStats",
+      "description": "Global application telemetry"
     }
   }
 }

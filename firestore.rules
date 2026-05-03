@@ -23,7 +23,6 @@ service cloud.firestore {
     match /profiles/{profileId} {
       allow read: if isOwner(profileId);
       allow create, update: if isOwner(profileId) 
-        && request.resource.data.keys().hasAll(['uid', 'dailyCalorieGoal'])
         && request.resource.data.uid == request.auth.uid;
     }
 
@@ -32,6 +31,7 @@ service cloud.firestore {
       function isValidMeal(data) {
         return data.userId == request.auth.uid
           && data.name is string && data.name.size() <= 200
+          && data.category in ['breakfast', 'lunch', 'dinner', 'snacks']
           && data.calories is number
           && data.date is string && data.date.size() == 10;
       }
@@ -73,6 +73,15 @@ service cloud.firestore {
       allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow create: if isSignedIn() && isValidWeightLog(request.resource.data);
       allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    // Global Stats
+    match /stats/{docId} {
+      allow read: if true;
+      allow create: if isSignedIn() && docId == 'global' && request.resource.data.userCount == 1;
+      allow update: if isSignedIn() && docId == 'global'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['userCount'])
+        && request.resource.data.userCount == resource.data.userCount + 1;
     }
   }
 }

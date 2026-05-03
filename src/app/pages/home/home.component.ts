@@ -237,20 +237,44 @@ interface UserProfile {
 
           <!-- Recent Activity (Wide) -->
           <div class="md:col-span-2 bg-slate-900 border border-slate-800 rounded-[2rem] p-6 flex flex-col gap-4">
+            <!-- Protocol Breakdown Header -->
             <div class="flex justify-between items-center px-2">
-              <h3 class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Entry History</h3>
+              <h3 class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Protocol Intake</h3>
               <div class="flex gap-1.5 h-6 items-end">
-                <div class="w-4 bg-lime-400/80 rounded-t-sm h-[60%]"></div>
-                <div class="w-4 bg-lime-400 rounded-t-sm h-[90%]"></div>
-                <div class="w-4 bg-slate-800 rounded-t-sm h-[30%]"></div>
-                <div class="w-4 bg-lime-400/60 rounded-t-sm h-[70%]"></div>
+                <div class="w-1 bg-lime-400 h-full"></div>
+                <div class="w-1 bg-blue-400 h-2/3"></div>
+                <div class="w-1 bg-red-400 h-1/2"></div>
               </div>
             </div>
-            <div *ngIf="recentMeals.length > 0; else noRecent" class="space-y-3">
-               <div *ngFor="let meal of recentMeals | slice:0:3" class="flex justify-between items-center text-xs p-3 bg-slate-950/50 rounded-xl border border-slate-800">
-                 <span class="font-medium text-slate-300 truncate max-w-[120px] uppercase font-mono">{{ meal.name }}</span>
-                 <span class="font-mono text-lime-400">{{ meal.calories }}k</span>
-               </div>
+            
+            <div class="space-y-4 overflow-y-auto max-h-[300px] pr-2 custom-scrollbar">
+              @for (cat of ['breakfast', 'lunch', 'dinner', 'snacks']; track cat) {
+                <div class="space-y-2">
+                  <div class="flex justify-between items-center border-b border-slate-800 pb-1">
+                    <span class="text-[9px] font-black uppercase tracking-[0.2em]" [class.text-orange-400]="cat === 'breakfast'" [class.text-lime-400]="cat === 'lunch'" [class.text-blue-400]="cat === 'dinner'" [class.text-fuchsia-400]="cat === 'snacks'">
+                      {{ cat }}
+                    </span>
+                    <span class="text-[9px] font-mono text-slate-500">{{ getCaloriesByCategory(cat) }} KCAL</span>
+                  </div>
+                  
+                  <div class="space-y-1">
+                    @for (meal of recentMeals; track meal.id) {
+                      @if (meal.category === cat) {
+                        <div class="flex justify-between items-center text-[10px] p-2 bg-slate-950/30 rounded-lg border-l-2" 
+                             [class.border-orange-400]="cat === 'breakfast'" 
+                             [class.border-lime-400]="cat === 'lunch'" 
+                             [class.border-blue-400]="cat === 'dinner'" 
+                             [class.border-fuchsia-400]="cat === 'snacks'">
+                          <span class="font-medium text-slate-300 truncate max-w-[150px] uppercase font-mono">{{ meal.name }}</span>
+                          <span class="font-mono text-slate-500 lowercase">{{ meal.calories }}k</span>
+                        </div>
+                      }
+                    } @empty {
+                       <p class="text-[8px] text-slate-800 italic uppercase tracking-widest px-2">No entries logged</p>
+                    }
+                  </div>
+                </div>
+              }
             </div>
             <ng-template #noRecent>
               <p class="text-slate-600 text-xs italic">Awaiting telemetry data...</p>
@@ -389,6 +413,19 @@ interface UserProfile {
 
               <h2 class="text-6xl font-black tracking-tighter leading-[0.8] uppercase italic">Visual<br/>Input</h2>
               
+              <!-- Category Selector -->
+              <div class="flex gap-2 mb-2 p-1 bg-slate-100 rounded-xl w-fit">
+                <button *ngFor="let cat of ['breakfast', 'lunch', 'dinner', 'snacks']" 
+                        (click)="mealCategory = cat"
+                        [class.bg-slate-950]="mealCategory === cat"
+                        [class.text-white]="mealCategory === cat"
+                        [class.bg-transparent]="mealCategory !== cat"
+                        [class.text-slate-400]="mealCategory !== cat"
+                        class="px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all">
+                  {{ cat }}
+                </button>
+              </div>
+              
               <!-- Last Result Card -->
               <div *ngIf="lastAnalysis" class="bg-lime-400/10 border border-lime-400/20 p-6 rounded-3xl animate-in fade-in zoom-in duration-500">
                  <div class="flex justify-between items-start mb-4">
@@ -469,6 +506,19 @@ interface UserProfile {
                 </div>
                 
                 <h2 class="text-5xl font-black tracking-tighter leading-[0.8] uppercase italic text-white">Manual<br/>Log</h2>
+                
+                <!-- Category Selector (Manual) -->
+                <div class="flex gap-2 mb-2 p-1 bg-slate-800 rounded-xl w-fit">
+                  <button *ngFor="let cat of ['breakfast', 'lunch', 'dinner', 'snacks']" 
+                          (click)="mealCategory = cat"
+                          [class.bg-white]="mealCategory === cat"
+                          [class.text-slate-950]="mealCategory === cat"
+                          [class.bg-transparent]="mealCategory !== cat"
+                          [class.text-slate-500]="mealCategory !== cat"
+                          class="px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all">
+                    {{ cat }}
+                  </button>
+                </div>
                 
                 <div class="space-y-4">
                   <input type="text" [(ngModel)]="manualName" placeholder="Meal Name..." class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-6 py-4 text-white font-mono placeholder:text-slate-800 focus:border-lime-400 outline-none transition-colors uppercase" />
@@ -772,6 +822,9 @@ interface UserProfile {
             <p class="text-[9px] font-mono text-slate-400 uppercase tracking-widest">
               Founder & Architect: <span class="text-lime-400 font-bold">Guru_Raj_N</span>
             </p>
+            <p class="text-[9px] font-mono text-slate-400 uppercase tracking-widest">
+              Global Protocol Connections: <span class="text-white font-bold">{{ userCount() }}</span>
+            </p>
           </div>
           <p class="text-[8px] font-mono text-slate-600 uppercase tracking-widest">
             © 2026 FlexFlow. Encrypted & Secure. All rights reserved.
@@ -793,7 +846,7 @@ interface UserProfile {
       
       <footer *ngIf="user" class="fixed bottom-0 left-0 right-0 p-4 flex justify-between text-[8px] font-mono text-slate-800 pointer-events-none tracking-[0.3em] uppercase">
         <span>FlexFlow Protocol v2.5.0 // Architect: Guru_Raj_N</span>
-        <span>BMI_ENG_INIT: SUCCESS</span>
+        <span class="text-lime-500/50">ACTIVE_NODES: {{ userCount() }} // BMI_ENG_INIT: SUCCESS</span>
       </footer>
     </div>
   `,
@@ -809,7 +862,9 @@ interface UserProfile {
 export class HomeComponent implements OnInit {
   user: User | null = null;
   activeTab: string = 'dash';
+  userCount = signal<number>(0);
   mealInput: string = '';
+  mealCategory: 'breakfast' | 'lunch' | 'dinner' | 'snacks' = 'breakfast';
   selectedImage: string | null = null;
   selectedImageMime: string = 'image/jpeg';
   workoutName: string = '';
@@ -956,22 +1011,44 @@ export class HomeComponent implements OnInit {
   ) {}
 
   ngOnInit() {
+    this.firebase.watchUserCount(count => {
+       this.userCount.set(count);
+    });
     this.firebase.auth.onAuthStateChanged(u => {
-      this.user = u;
       if (u) {
+        // Check if session has expired (30 mins of inactivity)
+        if (this.firebase.isSessionExpired()) {
+           this.logout();
+           this.showToast('Protocol session expired', 'info');
+           return;
+        }
+        this.user = u;
+        this.firebase.updateSessionTimestamp();
         this.loadProfile();
         this.loadData();
+        this.firebase.checkIn(u.uid);
+      } else {
+        this.user = null;
       }
     });
+
+    // Pulse check for session survival
+    setInterval(() => {
+      if (this.user && this.firebase.isSessionExpired()) {
+        this.logout();
+        this.showToast('Session timed out', 'info');
+      }
+    }, 60000); // Check every minute
   }
 
   async login() {
     try {
       await signInWithPopup(this.firebase.auth, new GoogleAuthProvider());
+      this.firebase.updateSessionTimestamp();
     } catch (e) { console.error(e); }
   }
 
-  logout() { this.firebase.auth.signOut(); }
+  logout() { this.firebase.clearSession(); }
 
   async loadProfile() {
     if (!this.user) return;
@@ -979,11 +1056,28 @@ export class HomeComponent implements OnInit {
     if (p) {
       this.profile.set(p as UserProfile);
       this.profileEdit = { ...this.profile() };
+    } else {
+      // Initialize protocol for new human connection
+      const defaultProfile: UserProfile = {
+        uid: this.user.uid,
+        weight: 75,
+        height: 180,
+        age: 30,
+        gender: 'male',
+        activityLevel: 'moderate',
+        dailyCalorieGoal: 2500,
+        dailyProteinGoal: 150
+      };
+      await this.firebase.saveProfile(this.user.uid, defaultProfile);
+      this.profile.set(defaultProfile);
+      this.profileEdit = { ...defaultProfile };
+      this.showToast('Human protocol initiated', 'success');
     }
   }
 
   async saveProfile() {
     if (!this.user) return;
+    this.firebase.updateSessionTimestamp();
     try {
       const calories = this.calculatedCalories();
       const protein = Math.round(this.profileEdit.weight * 2); // 2g per kg rule of thumb
@@ -1013,6 +1107,7 @@ export class HomeComponent implements OnInit {
 
   async analyzeMeal() {
     if ((!this.mealInput && !this.selectedImage) || !this.user) return;
+    this.firebase.updateSessionTimestamp();
     this.isAnalyzing = true;
     this.lastAnalysis = null;
     try {
@@ -1029,6 +1124,7 @@ export class HomeComponent implements OnInit {
         await addDoc(collection(this.firebase.db, 'meals'), {
           userId: this.user.uid,
           name: res.name,
+          category: this.mealCategory,
           calories: res.calories,
           protein: res.protein,
           carbs: res.carbs,
@@ -1050,10 +1146,12 @@ export class HomeComponent implements OnInit {
 
   async manualLog() {
     if (!this.manualName || !this.user) return;
+    this.firebase.updateSessionTimestamp();
     try {
       await addDoc(collection(this.firebase.db, 'meals'), {
         userId: this.user.uid,
         name: this.manualName,
+        category: this.mealCategory,
         calories: this.manualCalories,
         protein: this.manualProtein,
         carbs: this.manualCarbs,
@@ -1077,6 +1175,7 @@ export class HomeComponent implements OnInit {
 
   async createWorkout() {
     if (!this.workoutName || !this.user) return;
+    this.firebase.updateSessionTimestamp();
     try {
       const burned = this.estimateBurned();
       await addDoc(collection(this.firebase.db, 'workouts'), {
@@ -1155,7 +1254,7 @@ export class HomeComponent implements OnInit {
       }
     });
 
-    this.recentMeals = mealLogs.filter(m => m.date === todayStr).slice(0, 5);
+    this.recentMeals = mealLogs.filter(m => m.date === todayStr);
 
     // Process Weekly Data (last 7 days)
     const weekDays = [];
@@ -1198,5 +1297,11 @@ export class HomeComponent implements OnInit {
     todayWSnapshot.forEach(d => {
       this.todayCaloriesBurned += d.data()['caloriesBurned'] || 0;
     });
+  }
+
+  getCaloriesByCategory(category: string): number {
+    return this.recentMeals
+      .filter(m => m.category === category)
+      .reduce((sum, m) => sum + (m.calories || 0), 0);
   }
 }
