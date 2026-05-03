@@ -29,6 +29,28 @@ interface UserProfile {
   ],
   template: `
     <div class="min-h-screen bg-slate-950 text-slate-100 font-sans pb-28">
+      <!-- Toast Notifications -->
+      <div class="fixed top-6 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 w-full max-w-sm px-4 pointer-events-none">
+        <div *ngFor="let t of toasts()" 
+             class="p-4 rounded-2xl border backdrop-blur-xl shadow-2xl flex items-center justify-between gap-4 animate-in slide-in-from-top-4 duration-300 pointer-events-auto"
+             [class.bg-emerald-500/10]="t.type === 'success'"
+             [class.border-emerald-500/20]="t.type === 'success'"
+             [class.text-emerald-400]="t.type === 'success'"
+             [class.bg-red-500/10]="t.type === 'error'"
+             [class.border-red-500/20]="t.type === 'error'"
+             [class.text-red-400]="t.type === 'error'"
+             [class.bg-blue-500/10]="t.type === 'info'"
+             [class.border-blue-500/20]="t.type === 'info'"
+             [class.text-blue-400]="t.type === 'info'">
+          <div class="flex items-center gap-3">
+             <lucide-icon [name]="t.type === 'success' ? 'award' : (t.type === 'error' ? 'shield' : 'activity')" size="18"></lucide-icon>
+             <span class="text-xs font-black uppercase tracking-widest">{{ t.message }}</span>
+          </div>
+          <button (click)="removeToast(t.id)" class="opacity-50 hover:opacity-100">
+             <lucide-icon name="plus" class="rotate-45" size="14"></lucide-icon>
+          </button>
+        </div>
+      </div>
       <!-- Header -->
       <header class="p-6 flex justify-between items-end bg-slate-950/50 backdrop-blur-md sticky top-0 z-50">
         <div>
@@ -192,6 +214,27 @@ interface UserProfile {
             </div>
           </div>
 
+          <!-- Weight Delta (New) -->
+          <div class="bg-slate-900 border border-slate-800 rounded-[2rem] p-6 flex flex-col justify-between group">
+             <div class="flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full" [class.bg-red-400]="weightTrend() > 0" [class.bg-emerald-400]="weightTrend() <= 0"></div>
+                <span class="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Weight Delta</span>
+             </div>
+             <div>
+                <p class="text-4xl font-bold text-white tracking-tighter">
+                   {{ weightTrend() > 0 ? '+' : '' }}{{ weightTrend() }}kg
+                </p>
+                <p class="text-[9px] text-slate-500 mt-1 font-mono uppercase">
+                   {{ weightTrend() > 0 ? 'Surplus' : 'Deficit' }} detected
+                </p>
+             </div>
+             <div class="flex gap-1 mt-4">
+                <div *ngFor="let w of weightLogs().slice(-5)" class="flex-1 bg-slate-800 h-8 rounded-md relative flex items-end overflow-hidden group-hover:bg-slate-700 transition-colors">
+                   <div [style.height.%]="(w.weight / 150) * 100" class="w-full bg-blue-500/40"></div>
+                </div>
+             </div>
+          </div>
+
           <!-- Recent Activity (Wide) -->
           <div class="md:col-span-2 bg-slate-900 border border-slate-800 rounded-[2rem] p-6 flex flex-col gap-4">
             <div class="flex justify-between items-center px-2">
@@ -261,6 +304,50 @@ interface UserProfile {
                     <p class="text-xs text-slate-600 mt-1 uppercase italic">Monthly summary requires more data logs</p>
                  </div>
                  <lucide-icon name="shield" class="text-slate-800" size="24"></lucide-icon>
+              </div>
+           </div>
+
+              <!-- Weight Trend Chart (New Section) -->
+           <div class="bg-slate-900 border border-slate-800 p-8 rounded-[3rem]">
+              <div class="flex justify-between items-center mb-10">
+                 <div>
+                    <h2 class="text-3xl font-black tracking-tighter text-white uppercase italic">Weight_Path</h2>
+                    <p class="text-[9px] font-mono text-slate-500 uppercase tracking-widest mt-1">30 Day Gravity Drift</p>
+                 </div>
+                 <div class="text-right">
+                    <p class="text-[8px] font-bold text-slate-500 uppercase tracking-widest leading-none">Net Progress</p>
+                    <p class="text-xl font-black" [class.text-red-400]="weightTrend() > 0" [class.text-emerald-400]="weightTrend() <= 0">
+                       {{ weightTrend() > 0 ? '+' : '' }}{{ weightTrend() }}kg 
+                       <span class="text-[10px]">{{ weightTrend() > 0 ? 'SURPLUS' : 'DEFICIT' }}</span>
+                    </p>
+                 </div>
+              </div>
+
+              <!-- Mini Line-esque Chart -->
+              <div class="h-32 flex items-end gap-1 mb-6">
+                 <div *ngFor="let log of weightLogs()" class="flex-1 bg-blue-500/5 rounded-full flex flex-col justify-end items-center relative group min-w-[20px]">
+                    <div 
+                      [style.height.%]="((log.weight - 40) / 110) * 100" 
+                      class="w-full bg-blue-500/40 rounded-full transition-all duration-1000 group-hover:bg-blue-400"
+                    ></div>
+                    <div class="absolute bottom-0 w-full h-1 bg-blue-500 rounded-full opacity-20"></div>
+                    
+                    <div class="absolute -top-12 left-1/2 -translate-x-1/2 flex flex-col items-center opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-20">
+                       <span class="text-[10px] font-black text-white bg-slate-950 px-2 py-1 border border-slate-800 rounded-lg shadow-xl mb-1 whitespace-nowrap">
+                          {{ log.weight }} kg
+                       </span>
+                       <span class="text-[8px] font-mono text-slate-500 uppercase">{{ log.day }}</span>
+                    </div>
+                 </div>
+
+                 <div *ngIf="weightLogs().length === 0" class="w-full h-full flex items-center justify-center border border-dashed border-slate-800 rounded-2xl">
+                    <p class="text-[10px] font-mono text-slate-700 uppercase">Awaiting weigh-in data sessions</p>
+                 </div>
+              </div>
+              <div class="flex justify-between text-[8px] font-mono text-slate-700 uppercase tracking-widest px-2">
+                 <span>T-30D</span>
+                 <span>REALTIME_CALIBRATION</span>
+                 <span>T-NOW</span>
               </div>
            </div>
 
@@ -406,6 +493,34 @@ interface UserProfile {
                  </button>
               </div>
            </div>
+
+           <!-- Weigh-In Ritual (New) -->
+           <div class="bg-blue-500/10 border border-blue-500/20 p-8 rounded-[2.5rem] space-y-6 mt-6">
+              <div class="flex items-center gap-2">
+                <div class="w-3 h-3 bg-blue-500 rounded-full border-4 border-slate-900"></div>
+                <h2 class="text-2xl font-black tracking-tighter text-white uppercase italic">Weigh_In Ritual</h2>
+              </div>
+              <p class="text-slate-500 text-[10px] font-mono tracking-widest uppercase mb-4">Log current mass for protocol calibration</p>
+              
+              <div class="flex gap-4">
+                 <div class="flex-1 relative">
+                   <input 
+                     type="number" 
+                     [(ngModel)]="newWeight" 
+                     placeholder="ENTER KG..." 
+                     class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-6 py-5 text-2xl font-black text-blue-400 placeholder:text-slate-800 focus:border-blue-500 focus:outline-none transition-all uppercase"
+                   />
+                   <span class="absolute right-6 top-1/2 -translate-y-1/2 text-[10px] font-mono text-slate-700">KG_MEASURE</span>
+                 </div>
+                 <button 
+                   (click)="logWeight()" 
+                   [disabled]="!newWeight"
+                   class="bg-blue-500 text-slate-950 px-8 py-5 rounded-2xl font-black tracking-widest uppercase italic hover:bg-white transition-all disabled:opacity-20 active:scale-95"
+                 >
+                   Log
+                 </button>
+              </div>
+           </div>
         </section>
 
         <!-- Workout View -->
@@ -511,14 +626,50 @@ interface UserProfile {
           </div>
         </section>
 
-        <!-- Login Prompt -->
-        <div *ngIf="!user" class="text-center py-28 relative">
-           <div class="absolute inset-0 bg-lime-400/5 blur-[120px] rounded-full"></div>
-           <h2 class="text-7xl font-black tracking-tighter leading-[0.8] mb-8 relative z-10 uppercase transition-all italic text-balance">Fuel<br/>The<br/>Fire</h2>
-           <p class="text-slate-500 max-w-xs mx-auto text-sm font-bold mb-10 relative z-10 uppercase tracking-widest leading-relaxed">BIO-OPTIMIZATION PROTOCOL V2.0.4</p>
-           <button (click)="login()" class="relative z-10 px-10 py-5 bg-white text-slate-950 rounded-2xl font-black tracking-widest hover:bg-lime-400 active:scale-95 transition-all shadow-2xl shadow-white/10 uppercase italic">
-             Begin Initialization
-           </button>
+        <!-- Login Prompt (Trendy Version) -->
+        <div *ngIf="!user" class="min-h-[80vh] flex flex-col justify-center items-center relative overflow-hidden px-4">
+           <!-- Aesthetic Background Elements -->
+           <div class="absolute top-1/4 -left-20 w-96 h-96 bg-lime-400/20 blur-[120px] rounded-full animate-pulse"></div>
+           <div class="absolute bottom-1/4 -right-20 w-96 h-96 bg-blue-500/10 blur-[120px] rounded-full delay-1000 animate-pulse"></div>
+           
+           <div class="relative z-10 text-center space-y-8 max-w-2xl">
+              <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900 border border-slate-800 mb-4">
+                 <div class="w-1.5 h-1.5 rounded-full bg-lime-400 animate-ping"></div>
+                 <span class="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em]">Protocol_v2.0.4 Online</span>
+              </div>
+
+              <h2 class="text-6xl md:text-9xl font-black tracking-tighter leading-[0.85] text-white uppercase italic text-balance">
+                 Elevate<br/>
+                 <span class="text-transparent bg-clip-text bg-gradient-to-r from-lime-400 to-blue-500">Your</span><br/>
+                 Prime
+              </h2>
+              
+              <div class="space-y-4">
+                <p class="text-slate-500 text-xs md:text-sm font-bold uppercase tracking-widest max-w-md mx-auto leading-relaxed px-4">
+                   The ultimate bio-optimization engine for high-performance humans. 
+                   Sync your metabolism with the cloud.
+                </p>
+              </div>
+
+              <div class="pt-8 flex flex-col items-center gap-6">
+                 <button (click)="login()" class="group relative px-12 py-6 bg-white text-slate-950 rounded-[2rem] font-black tracking-widest hover:bg-lime-400 transition-all duration-500 hover:scale-105 active:scale-95 shadow-[0_0_40px_rgba(255,255,255,0.1)] uppercase italic">
+                   <div class="absolute inset-0 bg-lime-400 scale-x-0 group-hover:scale-x-100 transition-transform origin-left rounded-[2rem] -z-10"></div>
+                   <span class="relative flex items-center gap-3">
+                      Initialize Uplink
+                      <lucide-icon name="chevron-right" size="18"></lucide-icon>
+                   </span>
+                 </button>
+                 
+                 <div class="flex items-center gap-8 grayscale opacity-30 hover:grayscale-0 hover:opacity-100 transition-all cursor-default">
+                    <lucide-icon name="shield" size="20"></lucide-icon>
+                    <lucide-icon name="activity" size="20"></lucide-icon>
+                    <lucide-icon name="award" size="20"></lucide-icon>
+                 </div>
+              </div>
+           </div>
+
+           <!-- Scanline Effect -->
+           <div class="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%] opacity-20"></div>
         </div>
       </main>
 
@@ -568,10 +719,13 @@ export class HomeComponent implements OnInit {
   isAnalyzing: boolean = false;
   recentMeals: any[] = [];
   recentWorkouts: any[] = [];
+  weightLogs = signal<{date: string, weight: number, day: string}[]>([]);
+  toasts = signal<{id: number, message: string, type: 'success' | 'error' | 'info'}[]>([]);
   todayCalories: number = 0;
   todayProtein: number = 0;
   todayCaloriesBurned: number = 0;
   todayStr = new Date().toISOString().split('T')[0];
+  newWeight: number = 0;
 
   profile = signal<UserProfile>({
     uid: '',
@@ -585,6 +739,16 @@ export class HomeComponent implements OnInit {
   });
 
   profileEdit: UserProfile = { ...this.profile() };
+
+  showToast(message: string, type: 'success' | 'error' | 'info' = 'success') {
+    const id = Date.now();
+    this.toasts.update(current => [...current, { id, message, type }]);
+    setTimeout(() => this.removeToast(id), 5000);
+  }
+
+  removeToast(id: number) {
+    this.toasts.update(current => current.filter(t => t.id !== id));
+  }
 
   bmi = computed(() => {
     const p = this.profile();
@@ -663,6 +827,14 @@ export class HomeComponent implements OnInit {
     return Math.round(data.reduce((acc, curr) => acc + curr.kcal, 0) / data.length);
   });
 
+  weightTrend = computed(() => {
+    const logs = this.weightLogs();
+    if (logs.length < 2) return 0;
+    const latest = logs[logs.length - 1].weight;
+    const earliest = logs[0].weight;
+    return Number((latest - earliest).toFixed(1));
+  });
+
   constructor(
     private firebase: FirebaseService,
     private gemini: GeminiService
@@ -697,14 +869,19 @@ export class HomeComponent implements OnInit {
 
   async saveProfile() {
     if (!this.user) return;
-    const calories = this.calculatedCalories();
-    const protein = Math.round(this.profileEdit.weight * 2); // 2g per kg rule of thumb
-    this.profileEdit.dailyCalorieGoal = calories;
-    this.profileEdit.dailyProteinGoal = protein;
-    
-    await this.firebase.saveProfile(this.user.uid, this.profileEdit);
-    this.profile.set({ ...this.profileEdit });
-    this.activeTab = 'dash';
+    try {
+      const calories = this.calculatedCalories();
+      const protein = Math.round(this.profileEdit.weight * 2); // 2g per kg rule of thumb
+      this.profileEdit.dailyCalorieGoal = calories;
+      this.profileEdit.dailyProteinGoal = protein;
+      
+      await this.firebase.saveProfile(this.user.uid, this.profileEdit);
+      this.profile.set({ ...this.profileEdit });
+      this.activeTab = 'dash';
+      this.showToast('Profile protocol updated');
+    } catch (e) {
+      this.showToast('Profile update failed', 'error');
+    }
   }
 
   onFileSelected(event: any) {
@@ -746,8 +923,12 @@ export class HomeComponent implements OnInit {
         this.selectedImage = null;
         this.loadData();
         this.activeTab = 'dash';
+        this.showToast(`Logged: ${res.name} (${res.calories} kcal)`);
       }
-    } catch (e) { console.error(e); }
+    } catch (e) { 
+      console.error(e);
+      this.showToast('Bio-analysis failed', 'error');
+    }
     finally { this.isAnalyzing = false; }
   }
 
@@ -767,7 +948,11 @@ export class HomeComponent implements OnInit {
       });
       this.resetWorkoutForm();
       this.loadData();
-    } catch (e) { console.error(e); }
+      this.showToast('Training session recorded');
+    } catch (e) { 
+      console.error(e);
+      this.showToast('Commit failed', 'error');
+    }
   }
 
   resetWorkoutForm() {
@@ -775,6 +960,27 @@ export class HomeComponent implements OnInit {
     this.workoutSets = 3;
     this.workoutReps = 10;
     this.workoutWeight = 0;
+  }
+
+  async logWeight() {
+    if (!this.user || this.newWeight <= 0) return;
+    try {
+      await addDoc(collection(this.firebase.db, 'weightLogs'), {
+        userId: this.user.uid,
+        weight: this.newWeight,
+        date: new Date().toISOString().split('T')[0],
+        createdAt: Timestamp.now()
+      });
+      // Also update profile current weight
+      this.profileEdit.weight = this.newWeight;
+      await this.saveProfile();
+      this.loadData();
+      this.newWeight = 0;
+      this.showToast('Weight log synced to protocol');
+    } catch (e) { 
+      console.error(e);
+      this.showToast('Weight log failed', 'error');
+    }
   }
 
   async loadData() {
@@ -821,10 +1027,28 @@ export class HomeComponent implements OnInit {
       weekDays.push({ date: dStr, kcal: dayKcal, day: dayName });
     }
     this.weeklyData.set(weekDays);
-
+    
     const wq = query(collection(this.firebase.db, 'workouts'), where('userId', '==', this.user.uid), orderBy('createdAt', 'desc'), limit(5));
     const wSnapshot = await getDocs(wq);
     this.recentWorkouts = wSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    // Load weight history
+    const weightQ = query(
+      collection(this.firebase.db, 'weightLogs'),
+      where('userId', '==', this.user.uid),
+      orderBy('date', 'asc')
+    );
+    const weightSnapshot = await getDocs(weightQ);
+    const wl: any[] = [];
+    weightSnapshot.forEach(d => {
+      const data = d.data();
+      wl.push({
+        date: data['date'],
+        weight: data['weight'],
+        day: new Date(data['date']).toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()
+      });
+    });
+    this.weightLogs.set(wl);
 
     const todayWQ = query(collection(this.firebase.db, 'workouts'), where('userId', '==', this.user.uid), where('date', '==', todayStr));
     const todayWSnapshot = await getDocs(todayWQ);

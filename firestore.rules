@@ -60,5 +60,19 @@ service cloud.firestore {
         allow read, write: if isSignedIn() && get(/databases/$(database)/documents/workouts/$(workoutId)).data.userId == request.auth.uid;
       }
     }
+
+    // Weight Logs
+    match /weightLogs/{logId} {
+      function isValidWeightLog(data) {
+        return data.userId == request.auth.uid
+          && data.weight is number
+          && data.date is string && data.date.size() == 10;
+      }
+      
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidWeightLog(request.resource.data);
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
   }
 }

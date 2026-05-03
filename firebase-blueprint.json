@@ -1,5 +1,17 @@
 {
   "entities": {
+    "WeightLog": {
+      "title": "Weight Entry",
+      "description": "Snapshots of user body weight over time",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "weight": { "type": "number" },
+        "date": { "type": "string", "format": "date" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "weight", "date", "createdAt"]
+    },
     "UserProfile": {
       "title": "User Profile",
       "description": "Storage for user goals and personal information",
@@ -94,6 +106,10 @@
     "workouts/{workoutId}/exercises/{exerciseId}/sets": {
       "schema": "Set",
       "description": "Sets for an exercise"
+    },
+    "weightLogs": {
+      "schema": "WeightLog",
+      "description": "Historical body weight tracking"
     }
   }
 }
