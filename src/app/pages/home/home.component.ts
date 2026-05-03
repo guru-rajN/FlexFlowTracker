@@ -215,6 +215,76 @@ interface UserProfile {
           </div>
         </div>
 
+        <!-- Insights View -->
+        <section *ngIf="user && activeTab === 'insights'" class="space-y-6">
+           <div class="bg-slate-900 border border-slate-800 p-8 rounded-[3rem]">
+              <div class="flex justify-between items-start mb-10">
+                 <div>
+                   <h2 class="text-4xl font-black tracking-tighter text-white uppercase italic leading-none">Bio<br/>Trends</h2>
+                   <p class="text-slate-500 text-[10px] font-mono tracking-widest uppercase mt-2">Historical Efficiency Analysis</p>
+                 </div>
+                 <div class="bg-blue-500/10 border border-blue-500/20 px-4 py-2 rounded-xl text-right">
+                    <p class="text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-1">Avg Weekly</p>
+                    <p class="text-xl font-black text-blue-400 tracking-tighter">{{ avgWeeklyCalories() | number }}<span class="text-[10px] ml-1">kcal</span></p>
+                 </div>
+              </div>
+
+              <!-- Bar Chart -->
+              <div class="h-64 flex items-end gap-3 px-2">
+                 <div *ngFor="let day of weeklyData()" class="flex-1 flex flex-col items-center gap-4 group">
+                    <div class="relative w-full flex flex-col justify-end items-center h-48">
+                       <!-- Value Pulse -->
+                       <div class="absolute -top-6 opacity-0 group-hover:opacity-100 transition-opacity text-[9px] font-mono text-lime-400 bg-slate-950 px-2 py-1 rounded border border-slate-800">
+                          {{ day.kcal }}
+                       </div>
+                       <!-- Bar -->
+                       <div 
+                        [style.height.%]="(day.kcal / (profile().dailyCalorieGoal || 2500)) * 100"
+                        [class.bg-lime-400]="day.kcal >= profile().dailyCalorieGoal"
+                        [class.bg-slate-800]="day.kcal < profile().dailyCalorieGoal"
+                        class="w-full rounded-t-xl transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-x-110 origin-bottom"
+                       ></div>
+                       <div 
+                        *ngIf="day.kcal > profile().dailyCalorieGoal"
+                        [style.height.%]="((day.kcal - profile().dailyCalorieGoal) / profile().dailyCalorieGoal) * 100"
+                        class="absolute bottom-full w-full bg-red-500/40 rounded-t-sm"
+                       ></div>
+                    </div>
+                    <p class="text-[9px] font-black tracking-widest text-slate-500 uppercase">{{ day.day }}</p>
+                 </div>
+              </div>
+
+              <!-- Monthly Placeholder -->
+              <div class="mt-12 p-6 bg-slate-950/50 border border-slate-800/50 rounded-2xl flex justify-between items-center">
+                 <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Protocol Consistency</p>
+                    <p class="text-xs text-slate-600 mt-1 uppercase italic">Monthly summary requires more data logs</p>
+                 </div>
+                 <lucide-icon name="shield" class="text-slate-800" size="24"></lucide-icon>
+              </div>
+           </div>
+
+           <!-- Macro Breakdown Placeholder -->
+           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="bg-slate-900/50 border border-slate-800 p-6 rounded-[2rem]">
+                 <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-4">Top Nutrients</p>
+                 <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                       <span class="text-xs font-mono text-white">PROTEIN_SYNTHESIS</span>
+                       <span class="text-xs font-mono text-lime-400">OPTIMAL</span>
+                    </div>
+                    <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                       <div class="h-full bg-lime-400 w-4/5"></div>
+                    </div>
+                 </div>
+              </div>
+              <div class="bg-slate-900/50 border border-slate-800 p-6 rounded-[2rem] flex flex-col justify-center items-center text-center">
+                 <p class="text-[9px] font-black text-slate-800 uppercase tracking-[0.3em]">Historical Archive</p>
+                 <p class="text-[8px] text-slate-700 uppercase mt-2">Data retained for 365 days in Google Cloud Platform</p>
+              </div>
+           </div>
+        </section>
+
         <!-- Scanner View (Eat) -->
         <section *ngIf="user && activeTab === 'eat'" class="space-y-6">
           <div class="bg-white text-slate-950 p-10 rounded-[3rem] shadow-2xl relative overflow-hidden min-h-[460px] flex flex-col justify-end">
@@ -580,10 +650,18 @@ export class HomeComponent implements OnInit {
 
   navTabs = [
     { id: 'dash', icon: 'flame', label: 'Dash' },
-    { id: 'work', icon: 'activity', label: 'Work' },
+    { id: 'insights', icon: 'activity', label: 'Stats' },
+    { id: 'work', icon: 'dumbbell', label: 'Work' },
     { id: 'eat', icon: 'utensils', label: 'Scanner' },
     { id: 'goals', icon: 'user', label: 'Profile' }
   ];
+
+  weeklyData = signal<{date: string, kcal: number, day: string}[]>([]);
+  avgWeeklyCalories = computed(() => {
+    const data = this.weeklyData();
+    if (data.length === 0) return 0;
+    return Math.round(data.reduce((acc, curr) => acc + curr.kcal, 0) / data.length);
+  });
 
   constructor(
     private firebase: FirebaseService,
@@ -702,21 +780,47 @@ export class HomeComponent implements OnInit {
   async loadData() {
     if (!this.user) return;
     const mealsRef = collection(this.firebase.db, 'meals');
-    const mq = query(mealsRef, where('userId', '==', this.user.uid), orderBy('createdAt', 'desc'), limit(5));
-    const mSnapshot = await getDocs(mq);
-    this.recentMeals = mSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-
+    
     this.todayCalories = 0;
     this.todayProtein = 0;
     this.todayCaloriesBurned = 0;
     const todayStr = new Date().toISOString().split('T')[0];
-    const todayQ = query(mealsRef, where('userId', '==', this.user.uid), where('date', '==', todayStr));
-    const todaySnapshot = await getDocs(todayQ);
-    todaySnapshot.forEach(d => {
-      const data = d.data();
-      this.todayCalories += data['calories'] || 0;
-      this.todayProtein += data['protein'] || 0;
+    
+    // Load last 30 days for history
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const historyQ = query(
+      mealsRef, 
+      where('userId', '==', this.user.uid), 
+      where('date', '>=', thirtyDaysAgo.toISOString().split('T')[0])
+    );
+    
+    const historySnapshot = await getDocs(historyQ);
+    const mealLogs: any[] = [];
+    historySnapshot.forEach(doc => {
+      const data = doc.data();
+      mealLogs.push(data);
+      if (data['date'] === todayStr) {
+        this.todayCalories += data['calories'] || 0;
+        this.todayProtein += data['protein'] || 0;
+      }
     });
+
+    this.recentMeals = mealLogs.filter(m => m.date === todayStr).slice(0, 5);
+
+    // Process Weekly Data (last 7 days)
+    const weekDays = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dStr = d.toISOString().split('T')[0];
+      const dayName = d.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
+      const dayKcal = mealLogs
+        .filter(m => m.date === dStr)
+        .reduce((sum, m) => sum + (m.calories || 0), 0);
+      weekDays.push({ date: dStr, kcal: dayKcal, day: dayName });
+    }
+    this.weeklyData.set(weekDays);
 
     const wq = query(collection(this.firebase.db, 'workouts'), where('userId', '==', this.user.uid), orderBy('createdAt', 'desc'), limit(5));
     const wSnapshot = await getDocs(wq);
