@@ -1319,9 +1319,10 @@ export class HomeComponent implements OnInit {
         this.loadData();
         this.showToast(`Logged: ${res.name} (${res.calories} kcal)`);
       }
-    } catch (e) { 
+    } catch (e: any) { 
       console.error(e);
-      this.showToast('Bio-analysis failed', 'error');
+      const isApiKeyError = e.message?.includes('GEMINI_API_KEY') || e.message?.includes('API key');
+      this.showToast(isApiKeyError ? 'Gemini API Key missing (check Settings)' : 'Bio-analysis failed', 'error');
     }
     finally { this.isAnalyzing = false; }
   }

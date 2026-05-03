@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => {
       tailwindcss(),
     ],
     define: {
-      'globalThis.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY || ""),
+      'GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY || ""),
     },
     resolve: {
       alias: {

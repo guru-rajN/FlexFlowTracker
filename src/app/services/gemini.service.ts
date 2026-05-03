@@ -5,7 +5,17 @@ import { GoogleGenAI, Type } from "@google/genai";
   providedIn: 'root'
 })
 export class GeminiService {
-  private ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+  private aiClient: GoogleGenAI | null = null;
+
+  private get ai(): GoogleGenAI {
+    if (!this.aiClient) {
+      if (typeof GEMINI_API_KEY === 'undefined' || !GEMINI_API_KEY || GEMINI_API_KEY === 'MY_GEMINI_API_KEY') {
+        throw new Error('GEMINI_API_KEY is missing or using placeholder value. Please set your Gemini API key in the Settings/Secrets menu of AI Studio.');
+      }
+      this.aiClient = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+    }
+    return this.aiClient;
+  }
 
   async analyzeMeal(description: string) {
     const response = await this.ai.models.generateContent({
