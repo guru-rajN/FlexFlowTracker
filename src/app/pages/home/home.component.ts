@@ -4,9 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { FirebaseService } from '../../services/firebase.service';
 import { GeminiService } from '../../services/gemini.service';
 import { signInWithPopup, GoogleAuthProvider, User } from 'firebase/auth';
-import { collection, addDoc, query, where, getDocs, orderBy, limit, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs, orderBy, limit, Timestamp, onSnapshot, QuerySnapshot, DocumentData } from 'firebase/firestore';
 import { LucideAngularModule } from 'lucide-angular';
-import { Flame, Utensils, Award, Plus, Trash2, ChevronRight, Activity, Camera, User as UserIcon, Settings, LogOut, Dumbbell, Shield, Linkedin } from 'lucide-angular';
+import { Flame, Utensils, Award, Plus, Trash2, ChevronRight, Activity, Camera, User as UserIcon, Settings, LogOut, Dumbbell, Shield, Linkedin, Star } from 'lucide-angular';
 
 interface UserProfile {
   uid: string;
@@ -86,7 +86,7 @@ interface UserProfile {
         <div *ngIf="user && activeTab === 'dash'" class="grid grid-cols-1 md:grid-cols-4 gap-4">
           
           <!-- BMI & Stats Row -->
-          <div class="md:col-span-4 grid grid-cols-2 md:col-span-4 md:grid-cols-5 gap-4 mb-2">
+          <div class="md:col-span-4 grid grid-cols-2 md:col-span-4 md:grid-cols-6 gap-4 mb-2">
              <div class="bg-slate-900/50 border border-slate-800 p-4 rounded-2xl">
                 <p class="text-[9px] uppercase tracking-[0.2em] text-slate-500 font-bold mb-1">BMI Score</p>
                 <p class="text-2xl font-black text-white tracking-tighter">{{ bmi().toFixed(1) }}</p>
@@ -103,6 +103,13 @@ interface UserProfile {
              <div class="bg-slate-900/50 border border-slate-800 p-4 rounded-2xl">
                 <p class="text-[9px] uppercase tracking-[0.2em] text-slate-500 font-bold mb-1">Height</p>
                 <p class="text-2xl font-black text-white tracking-tighter">{{ profile().height }}<span class="text-xs ml-1 text-slate-500">cm</span></p>
+             </div>
+             <div class="bg-slate-900/50 border border-slate-800 p-4 rounded-2xl flex flex-col justify-between">
+                <p class="text-[9px] uppercase tracking-[0.2em] text-slate-500 font-bold mb-1">Engagement</p>
+                <div class="flex items-end justify-between">
+                   <p class="text-2xl font-black text-lime-400 tracking-tighter">{{ protocolEngagement() }}%</p>
+                   <lucide-icon name="activity" size="12" class="text-lime-400 animate-pulse mb-1"></lucide-icon>
+                </div>
              </div>
              <div class="bg-slate-900/50 border border-slate-800 p-4 rounded-2xl flex flex-col justify-between">
                 <p class="text-[9px] uppercase tracking-[0.2em] text-slate-500 font-bold mb-1">Net Flow</p>
@@ -279,6 +286,85 @@ interface UserProfile {
             <ng-template #noRecent>
               <p class="text-slate-600 text-xs italic">Awaiting telemetry data...</p>
             </ng-template>
+          </div>
+
+          <!-- Testimonials section -->
+          <div class="md:col-span-4 mt-8">
+             <div class="flex justify-between items-center mb-6 px-4">
+                <div>
+                   <h3 class="text-white text-xl font-black uppercase italic tracking-tighter">System_Reviews</h3>
+                   <p class="text-[9px] font-mono text-slate-500 uppercase tracking-widest mt-1">High-Efficiency Protocol Testimonials</p>
+                </div>
+                <div class="flex gap-2">
+                   <button (click)="showTestimonyForm.set(!showTestimonyForm())" class="text-[9px] bg-slate-900 border border-slate-800 text-slate-400 px-4 py-2 rounded-xl font-bold uppercase tracking-widest hover:text-white hover:border-slate-700 transition-all flex items-center gap-2">
+                      <lucide-icon [name]="showTestimonyForm() ? 'plus' : 'award'" [class.rotate-45]="showTestimonyForm()" size="12"></lucide-icon>
+                      {{ showTestimonyForm() ? 'Cancel' : 'Submit Review' }}
+                   </button>
+                   <button (click)="seedTestimonials()" *ngIf="testimonials().length === 0" class="text-[9px] bg-lime-400 text-black px-4 py-2 rounded-xl font-bold uppercase tracking-widest hover:bg-white transition-all">Initialize Logs</button>
+                </div>
+             </div>
+             
+             <!-- Submission Form -->
+             <div *ngIf="showTestimonyForm()" class="mb-8 p-8 bg-slate-900 border border-lime-400/20 rounded-[2.5rem] animate-in zoom-in duration-300">
+                <h4 class="text-white text-sm font-black uppercase italic mb-4">New_Protocol_Feedback</h4>
+                <div class="space-y-4">
+                   <textarea [(ngModel)]="newTestimony.content" placeholder="DESCRIBE YOUR PROTOCOL EXPERIENCE..." class="w-full bg-slate-950 border border-slate-800 rounded-2xl p-6 text-xs text-white font-mono placeholder:text-slate-800 focus:border-lime-400 outline-none transition-all uppercase" rows="3"></textarea>
+                   <div class="flex justify-between items-center">
+                      <div class="flex items-center gap-3">
+                         <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Score:</span>
+                         <div class="flex gap-1">
+                            <button *ngFor="let s of [1,2,3,4,5]" (click)="newTestimony.rating = s" class="p-1 hover:scale-110 transition-transform">
+                               <lucide-icon name="star" size="14" [class.text-lime-400]="s <= newTestimony.rating" [class.text-slate-800]="s > newTestimony.rating"></lucide-icon>
+                            </button>
+                         </div>
+                      </div>
+                      <button (click)="submitTestimony()" [disabled]="!newTestimony.content" class="px-8 py-3 bg-lime-400 text-slate-950 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-white transition-all disabled:opacity-20 active:scale-95">Upload Review</button>
+                   </div>
+                </div>
+             </div>
+
+             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                @for (test of displayedTestimonials(); track test.id) {
+                    <div class="bg-slate-900 border border-slate-800 p-6 rounded-[2.5rem] space-y-4 hover:border-lime-400/30 transition-all group animate-in fade-in zoom-in duration-500">
+                        <div class="flex justify-between items-start">
+                           <div class="flex items-center gap-3">
+                              <div class="w-10 h-10 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-lg text-lime-400 font-black shadow-inner">
+                                 {{ test.userName.charAt(0) }}
+                              </div>
+                              <div>
+                                 <p class="text-xs font-black text-white uppercase tracking-tight">{{ test.userName }}</p>
+                                 <p class="text-[8px] font-mono text-slate-600 uppercase">{{ test.role || 'Protocol User' }}</p>
+                              </div>
+                           </div>
+                           <div class="flex gap-0.5">
+                              @for (star of [1,2,3,4,5]; track star) {
+                                 <lucide-icon name="star" size="10" [class.text-lime-400]="star <= test.rating" [class.text-slate-800]="star > test.rating"></lucide-icon>
+                              }
+                           </div>
+                        </div>
+                        
+                        <div class="min-h-[60px]">
+                           <p class="text-xs text-slate-400 leading-relaxed italic line-clamp-3">"{{ test.content }}"</p>
+                        </div>
+
+                        <div class="pt-4 border-t border-slate-800/50 flex justify-between items-center">
+                           <span class="text-[8px] font-mono text-slate-700 uppercase tracking-widest">VERIFICATION: {{ test.id.slice(0, 8) }}</span>
+                           <lucide-icon name="shield" size="12" class="text-slate-800 group-hover:text-lime-400/50 transition-colors"></lucide-icon>
+                        </div>
+                    </div>
+                } @empty {
+                   <div class="md:col-span-3 p-16 bg-slate-950/20 rounded-[3rem] border border-dashed border-slate-800 flex flex-col items-center justify-center text-center gap-6">
+                      <div class="w-20 h-20 rounded-3xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-700 relative">
+                         <lucide-icon name="award" size="40"></lucide-icon>
+                         <div class="absolute inset-0 bg-lime-400/5 blur-xl rounded-full"></div>
+                      </div>
+                      <div>
+                         <p class="text-lg font-black text-slate-500 uppercase tracking-tighter italic leading-none">Awaiting Signal Verification</p>
+                         <p class="text-[10px] font-mono text-slate-700 uppercase tracking-[0.3em] mt-3">Initialized logs required for protocol validation</p>
+                      </div>
+                   </div>
+                }
+             </div>
           </div>
         </div>
 
@@ -867,6 +953,20 @@ export class HomeComponent implements OnInit {
   user: User | null = null;
   activeTab: string = 'dash';
   userCount = signal<number>(0);
+  testimonials = signal<any[]>([]);
+  activeTestimonyIndex = signal<number>(0);
+  displayedTestimonials = computed(() => {
+    const all = this.testimonials();
+    if (all.length <= 3) return all;
+    const start = this.activeTestimonyIndex();
+    const result = [];
+    for (let i = 0; i < 3; i++) {
+      result.push(all[(start + i) % all.length]);
+    }
+    return result;
+  });
+  showTestimonyForm = signal<boolean>(false);
+  newTestimony = { content: '', rating: 5 };
   mealInput: string = '';
   mealCategory: 'breakfast' | 'lunch' | 'dinner' | 'snacks' = 'breakfast';
   selectedImage: string | null = null;
@@ -1031,6 +1131,22 @@ export class HomeComponent implements OnInit {
         this.loadProfile();
         this.loadData();
         this.firebase.checkIn(u.uid);
+
+        // Fetch Testimonials
+        onSnapshot(collection(this.firebase.db, 'testimonials'), (snap: QuerySnapshot<DocumentData>) => {
+          const all = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          // Sort by high rating first
+          const sorted = all.sort((a: any, b: any) => b.rating - a.rating);
+          this.testimonials.set(sorted);
+        });
+
+        // Testimonial Rotation Logic
+        setInterval(() => {
+          const count = this.testimonials().length;
+          if (count > 3) {
+            this.activeTestimonyIndex.update(i => (i + 1) % count);
+          }
+        }, 5000);
       } else {
         this.user = null;
       }
@@ -1106,6 +1222,43 @@ export class HomeComponent implements OnInit {
         this.selectedImage = e.target.result;
       };
       reader.readAsDataURL(file);
+    }
+  }
+
+  async seedTestimonials() {
+    const dummy = [
+      { userName: 'Alex_V', content: 'Protocol maximized my neural output during fasting windows.', rating: 5, createdAt: new Date().toISOString() },
+      { userName: 'Sarah_K', content: 'The intake breakdown is essential for my prep season.', rating: 5, createdAt: new Date().toISOString() },
+      { userName: 'Unit_042', content: 'Cleanest interface in the ecosystem. 10/10 optimization.', rating: 4, createdAt: new Date().toISOString() }
+    ];
+    for (const d of dummy) {
+      await addDoc(collection(this.firebase.db, 'testimonials'), d);
+    }
+  }
+
+  protocolEngagement = computed(() => {
+    let score = 0;
+    if (this.todayCalories > 0) score += 35;
+    if (this.recentWorkouts.length > 0) score += 35;
+    if (this.weightLogs().length > 0) score += 30;
+    return score;
+  });
+
+  async submitTestimony() {
+    if (!this.user || !this.newTestimony.content) return;
+    try {
+      await addDoc(collection(this.firebase.db, 'testimonials'), {
+        userName: this.user.displayName || 'Anonymous_Human',
+        content: this.newTestimony.content,
+        rating: this.newTestimony.rating,
+        role: 'Verified Human',
+        createdAt: new Date().toISOString()
+      });
+      this.showTestimonyForm.set(false);
+      this.newTestimony = { content: '', rating: 5 };
+      this.showToast('Testimony uploaded to protocol');
+    } catch (e) {
+      this.showToast('Upload failed', 'error');
     }
   }
 

@@ -22,6 +22,20 @@
       },
       "required": ["userId", "weight", "date", "createdAt"]
     },
+    "Testimonial": {
+      "title": "Protocol Testimony",
+      "description": "User feedback and rating",
+      "type": "object",
+      "properties": {
+        "userName": { "type": "string" },
+        "avatar": { "type": "string" },
+        "content": { "type": "string" },
+        "rating": { "type": "number", "minimum": 1, "maximum": 5 },
+        "role": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userName", "content", "rating"]
+    },
     "UserProfile": {
       "title": "User Profile",
       "description": "Storage for user goals and personal information",
@@ -126,6 +140,10 @@
     "stats": {
       "schema": "GlobalStats",
       "description": "Global application telemetry"
+    },
+    "testimonials": {
+      "schema": "Testimonial",
+      "description": "Public user testimonials"
     }
   }
 }

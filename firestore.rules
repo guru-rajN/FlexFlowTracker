@@ -83,5 +83,18 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['userCount'])
         && request.resource.data.userCount == resource.data.userCount + 1;
     }
+
+    // Testimonials
+    match /testimonials/{id} {
+      allow read: if true;
+      allow create: if isSignedIn()
+        && request.resource.data.userName is string
+        && request.resource.data.content is string
+        && request.resource.data.content.size() <= 1000
+        && request.resource.data.rating is number
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5;
+      allow update, delete: if false;
+    }
   }
 }
