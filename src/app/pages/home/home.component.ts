@@ -756,6 +756,27 @@ interface UserProfile {
            <!-- Scanline Effect -->
            <div class="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%] opacity-20"></div>
         </div>
+
+        <!-- Footer Item -->
+        <footer class="mt-20 pb-12 border-t border-slate-900 pt-12 text-center space-y-4">
+          <div class="flex flex-col items-center gap-2">
+            <div class="bg-lime-400 p-1.5 rounded-lg text-slate-950 flex items-center justify-center">
+              <lucide-icon name="flame" size="14"></lucide-icon>
+            </div>
+            <p class="text-[10px] font-black tracking-[0.4em] text-white uppercase italic">FlexFlow Protocol</p>
+          </div>
+          <div class="space-y-1">
+            <p class="text-[9px] font-mono text-slate-500 uppercase tracking-widest">
+              Neural Optimization for High-Performance Humans
+            </p>
+            <p class="text-[9px] font-mono text-slate-400 uppercase tracking-widest">
+              Founder & Architect: <span class="text-lime-400 font-bold">Guru_Raj_N</span>
+            </p>
+          </div>
+          <p class="text-[8px] font-mono text-slate-600 uppercase tracking-widest">
+            © 2026 FlexFlow. Encrypted & Secure. All rights reserved.
+          </p>
+        </footer>
       </main>
 
       <!-- Glass Nav -->
@@ -771,7 +792,7 @@ interface UserProfile {
       </nav>
       
       <footer *ngIf="user" class="fixed bottom-0 left-0 right-0 p-4 flex justify-between text-[8px] font-mono text-slate-800 pointer-events-none tracking-[0.3em] uppercase">
-        <span>FlexFlow Protocol v2.5.0</span>
+        <span>FlexFlow Protocol v2.5.0 // Architect: Guru_Raj_N</span>
         <span>BMI_ENG_INIT: SUCCESS</span>
       </footer>
     </div>

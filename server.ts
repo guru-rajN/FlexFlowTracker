@@ -46,10 +46,22 @@ async function startServer() {
     });
   } else {
     const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
+    // Ensure the dist directory exists before trying to serve from it
+    if (fs.existsSync(distPath)) {
+      app.use(express.static(distPath));
+      app.get('*', (req, res) => {
+        const indexPath = path.join(distPath, 'index.html');
+        if (fs.existsSync(indexPath)) {
+          res.sendFile(indexPath);
+        } else {
+          res.status(404).send('Build artifacts not found. Please run build.');
+        }
+      });
+    } else {
+      app.get('*', (req, res) => {
+        res.status(404).send('Production build not found. If this is development, ensure NODE_ENV is set correctly.');
+      });
+    }
   }
 
   app.listen(PORT, '0.0.0.0', () => {
