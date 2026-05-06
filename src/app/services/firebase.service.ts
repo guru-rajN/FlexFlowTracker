@@ -149,10 +149,23 @@ export class FirebaseService {
 
   async checkIn(uid: string) {
     const p = await this.getProfile(uid);
-    if (p && !(p as any).isCounted) {
+    if (!p) {
+      // New user, create skeleton profile and increment
+      const skeleton = {
+        uid,
+        isCounted: true,
+        updatedAt: new Date().toISOString(),
+        dailyCalorieGoal: 2000, // Default
+        dailyProteinGoal: 150
+      };
+      await setDoc(doc(this.db, `profiles/${uid}`), skeleton);
+      await this.incrementUserCount();
+      console.log('Firebase Protocol: New Node Verified');
+    } else if (!(p as any).isCounted) {
       // User has profile but wasn't counted (migration case)
       await updateDoc(doc(this.db, `profiles/${uid}`), { isCounted: true });
       await this.incrementUserCount();
+      console.log('Firebase Protocol: Existing Node Sync');
     }
   }
 

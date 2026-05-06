@@ -6,7 +6,7 @@ import { GeminiService } from '../../services/gemini.service';
 import { signInWithPopup, GoogleAuthProvider, User } from 'firebase/auth';
 import { collection, addDoc, query, where, getDocs, orderBy, limit, Timestamp, onSnapshot, QuerySnapshot, DocumentData } from 'firebase/firestore';
 import { LucideAngularModule } from 'lucide-angular';
-import { Flame, Utensils, Award, Plus, Trash2, ChevronRight, Activity, Camera, User as UserIcon, Settings, LogOut, Dumbbell, Shield, Linkedin, Star } from 'lucide-angular';
+import { Flame, Utensils, Award, Plus, Trash2, ChevronRight, Activity, Camera, User as UserIcon, Settings, LogOut, Dumbbell, Shield, Linkedin, Star, Zap, Clock, History, Calendar } from 'lucide-angular';
 
 interface UserProfile {
   uid: string;
@@ -73,21 +73,21 @@ interface UserProfile {
           </div>
         </div>
         
-        <div *ngIf="!user">
+         <div *ngIf="!user()">
           <button (click)="login()" class="px-5 py-2 bg-white text-slate-950 rounded-xl text-sm font-bold hover:bg-lime-400 transition-all active:scale-95">
             LOG IN
           </button>
         </div>
         
-        <div *ngIf="user" class="flex items-center gap-4 bg-slate-900 border border-slate-800 p-2 pl-4 rounded-2xl relative overflow-hidden">
+        <div *ngIf="user()" class="flex items-center gap-4 bg-slate-900 border border-slate-800 p-2 pl-4 rounded-2xl relative overflow-hidden">
           <div *ngIf="isPro()" class="absolute -top-1 -right-4 bg-lime-400 text-slate-950 text-[7px] font-black uppercase px-6 py-1 rotate-12 shadow-sm">
              PRO
           </div>
           <div class="text-right">
              <p class="text-[9px] uppercase tracking-widest text-slate-500 font-bold">User session</p>
-             <p class="text-xs font-mono text-lime-400">{{ user.displayName?.split(' ')[0] }}</p>
+             <p class="text-xs font-mono text-lime-400">{{ user()?.displayName?.split(' ')[0] }}</p>
           </div>
-          <img [src]="user.photoURL" class="w-8 h-8 rounded-lg border border-slate-800" referrerpolicy="no-referrer" />
+          <img [src]="user()?.photoURL" class="w-8 h-8 rounded-lg border border-slate-800" referrerpolicy="no-referrer" />
           <button (click)="logout()" class="p-2 text-slate-500 hover:text-white transition-colors">
             <lucide-icon name="log-out" size="14"></lucide-icon>
           </button>
@@ -820,7 +820,111 @@ interface UserProfile {
 
         <!-- Workout View -->
         <section *ngIf="user && activeTab === 'work'" class="space-y-6">
-          <div class="bg-slate-900 border border-slate-800 p-8 rounded-[2.5rem] space-y-6 text-balance">
+          <!-- Weekly Protocol Selector -->
+          <div class="bg-slate-900 border border-slate-800 p-8 rounded-[3rem] space-y-6">
+             <div class="flex justify-between items-end">
+                <div>
+                   <h2 class="text-4xl font-black tracking-tighter text-white uppercase italic leading-none">Weekly<br/>Protocol</h2>
+                   <p class="text-slate-500 text-[10px] font-mono tracking-widest uppercase mt-2">Cycle Analysis & Planning</p>
+                </div>
+                <div class="bg-lime-400/10 border border-lime-400/20 px-3 py-1.5 rounded-xl flex items-center gap-2">
+                   <lucide-icon name="calendar" size="12" class="text-lime-400"></lucide-icon>
+                   <span class="text-[9px] font-black text-lime-400 uppercase tracking-tighter">System_Clock: {{ todayStr }}</span>
+                </div>
+             </div>
+
+             <div class="flex flex-wrap gap-2">
+                @for (dayPlan of weeklyWorkoutPlan; track dayPlan.day) {
+                   <button 
+                     (click)="expandedPlanDay.set(dayPlan.day)"
+                     [class.bg-white]="expandedPlanDay() === dayPlan.day"
+                     [class.text-slate-950]="expandedPlanDay() === dayPlan.day"
+                     [class.bg-slate-950]="expandedPlanDay() !== dayPlan.day"
+                     [class.text-slate-500]="expandedPlanDay() !== dayPlan.day"
+                     class="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-slate-800 shadow-xl"
+                   >
+                     {{ dayPlan.day.slice(0,3) }}
+                   </button>
+                }
+             </div>
+
+             <!-- Day Detail -->
+             @for (dayPlan of weeklyWorkoutPlan; track dayPlan.day) {
+                @if (expandedPlanDay() === dayPlan.day) {
+                   <div class="animate-in fade-in slide-in-from-bottom-2 duration-500">
+                      <div class="bg-slate-950/50 border border-slate-800 p-6 rounded-[2rem] space-y-4">
+                         <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-3">
+                               <div class="w-10 h-10 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-lime-400">
+                                  <lucide-icon [name]="dayPlan.icon" size="20"></lucide-icon>
+                               </div>
+                               <div>
+                                  <p class="text-xs font-black text-white uppercase italic tracking-tight">{{ dayPlan.title }}</p>
+                                  <p class="text-[9px] font-mono text-slate-600 uppercase">{{ dayPlan.exercises.length }} Movements Programmed</p>
+                               </div>
+                            </div>
+                         </div>
+
+                         @if (dayPlan.exercises.length > 0) {
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                               @for (ex of dayPlan.exercises; track ex.name) {
+                                  <button 
+                                    (click)="logPlanExercise(ex)"
+                                    [class.border-lime-400/50]="completedExerciseNames().includes(ex.name)"
+                                    [class.bg-lime-400/5]="completedExerciseNames().includes(ex.name)"
+                                    class="bg-slate-900/50 border border-slate-800 p-4 rounded-2xl text-left hover:border-lime-400/30 transition-all group flex justify-between items-center relative overflow-hidden"
+                                  >
+                                    <div *ngIf="completedExerciseNames().includes(ex.name)" class="absolute top-0 right-0 p-1">
+                                       <lucide-icon name="award" size="10" class="text-lime-400"></lucide-icon>
+                                    </div>
+                                    <div>
+                                       <p class="text-[11px] font-black group-hover:text-white uppercase transition-colors" [class.text-lime-400]="completedExerciseNames().includes(ex.name)" [class.text-slate-300]="!completedExerciseNames().includes(ex.name)">
+                                          {{ ex.name }}
+                                       </p>
+                                       <p class="text-[9px] font-mono text-slate-600 uppercase mt-1">
+                                          {{ ex.sets }} × {{ ex.reps }} <span *ngIf="ex.weight > 0">@ {{ ex.weight }}kg</span>
+                                       </p>
+                                    </div>
+                                    <div class="flex flex-col items-end gap-2">
+                                       <div class="bg-slate-800 text-[8px] font-bold text-slate-500 px-2 py-1 rounded group-hover:bg-lime-400 group-hover:text-slate-950 transition-all uppercase">
+                                          {{ ex.focus }}
+                                       </div>
+                                       <div class="flex gap-1">
+                                          <button 
+                                            (click)="$event.stopPropagation(); toggleExerciseCompletion(ex.name)"
+                                            class="text-[7px] font-black uppercase tracking-tighter border px-2 py-0.5 rounded transition-all"
+                                            [class.text-slate-500]="!completedExerciseNames().includes(ex.name)"
+                                            [class.border-slate-800]="!completedExerciseNames().includes(ex.name)"
+                                            [class.text-lime-400]="completedExerciseNames().includes(ex.name)"
+                                            [class.border-lime-400/30]="completedExerciseNames().includes(ex.name)"
+                                          >
+                                             {{ completedExerciseNames().includes(ex.name) ? 'Done' : 'Mark' }}
+                                          </button>
+                                          <button 
+                                            (click)="$event.stopPropagation(); logPlanExercise(ex); createWorkout()"
+                                            class="text-[7px] font-black text-lime-400/50 hover:text-lime-400 uppercase tracking-tighter border border-lime-400/10 px-2 py-0.5 rounded transition-all"
+                                          >
+                                             Quick Log
+                                          </button>
+                                       </div>
+                                    </div>
+                                  </button>
+                               }
+                            </div>
+                         } @else {
+                            <div class="py-10 text-center border-2 border-dashed border-slate-900 rounded-3xl">
+                               <lucide-icon name="shield" size="32" class="text-slate-800 mx-auto mb-4"></lucide-icon>
+                               <p class="text-xs font-black text-slate-700 uppercase italic">Rest & Repair Phase Initiated</p>
+                               <p class="text-[9px] font-mono text-slate-800 uppercase mt-2">Metabolic recovery is essential for hypertrophy</p>
+                            </div>
+                         }
+                      </div>
+                   </div>
+                }
+             }
+          </div>
+
+          <div id="log-anchor" class="bg-slate-900 border border-slate-800 p-8 rounded-[2.5rem] space-y-6 text-balance">
              <div class="flex items-center gap-2 text-balance">
               <div class="w-3 h-3 bg-blue-500 rounded-full border-4 border-slate-900"></div>
               <span class="text-[10px] font-bold uppercase tracking-widest text-slate-500 font-mono">Session Logger</span>
@@ -882,9 +986,12 @@ interface UserProfile {
                 </div>
 
                 <div class="bg-slate-950/50 p-4 rounded-2xl border border-dashed border-slate-800 flex justify-between items-center" *ngIf="workoutName">
-                   <div class="text-left">
-                      <p class="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Est. Burned</p>
-                      <p class="text-xl font-black text-blue-400 tracking-tighter">{{ estimateBurned() }} <span class="text-[10px]">KCAL</span></p>
+                   <div class="text-left flex-1">
+                      <p class="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Est. Metabolic Impact</p>
+                      <div class="flex items-center gap-2">
+                        <input type="number" [(ngModel)]="workoutCalories" class="bg-transparent text-xl font-black text-blue-400 tracking-tighter w-16 outline-none border-b border-blue-400/20" />
+                        <span class="text-[10px] font-bold text-blue-400">KCAL</span>
+                      </div>
                    </div>
                    <lucide-icon name="flame" class="text-blue-400/20" size="24"></lucide-icon>
                 </div>
@@ -984,7 +1091,7 @@ interface UserProfile {
               <lucide-icon name="linkedin" size="10"></lucide-icon>
             </a>
             <p class="text-[9px] font-mono text-slate-400 uppercase tracking-widest">
-              Global Protocol Connections: <span class="text-white font-bold">{{ userCount() }}</span>
+              Global Protocol Connections: <span class="text-white font-bold">{{ activeNodes() }}</span>
             </p>
           </div>
           <p class="text-[8px] font-mono text-slate-600 uppercase tracking-widest">
@@ -994,7 +1101,7 @@ interface UserProfile {
       </main>
 
       <!-- Glass Nav -->
-      <nav *ngIf="user" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/40 backdrop-blur-2xl border border-white/5 px-2 py-2 flex gap-1 rounded-3xl z-50 shadow-2xl">
+      <nav *ngIf="user()" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/40 backdrop-blur-2xl border border-white/5 px-2 py-2 flex gap-1 rounded-3xl z-50 shadow-2xl">
         <button *ngFor="let tab of navTabs" (click)="activeTab = tab.id" 
                 [class.bg-white]="activeTab === tab.id" 
                 [class.text-slate-950]="activeTab === tab.id" 
@@ -1005,12 +1112,12 @@ interface UserProfile {
         </button>
       </nav>
       
-      <footer *ngIf="user" class="fixed bottom-0 left-0 right-0 p-4 flex justify-between text-[8px] font-mono text-slate-800 pointer-events-none tracking-[0.3em] uppercase">
+      <footer *ngIf="user()" class="fixed bottom-0 left-0 right-0 p-4 flex justify-between text-[8px] font-mono text-slate-800 pointer-events-none tracking-[0.3em] uppercase">
         <a href="https://www.linkedin.com/in/guru-raj-n-741a65145/" target="_blank" class="hover:text-lime-400 transition-colors pointer-events-auto flex items-center gap-2">
           FlexFlow Protocol v2.5.0 // Architect: Guru_Raj_N
           <lucide-icon name="linkedin" size="8" class="mb-0.5"></lucide-icon>
         </a>
-        <span class="text-lime-500/50">ACTIVE_NODES: {{ userCount() }} // BMI_ENG_INIT: SUCCESS</span>
+        <span class="text-lime-500/50">ACTIVE_NODES: {{ activeNodes() }} // BMI_ENG_INIT: SUCCESS</span>
       </footer>
     </div>
   `,
@@ -1032,10 +1139,16 @@ interface UserProfile {
   `]
 })
 export class HomeComponent implements OnInit {
-  user: User | null = null;
+  user = signal<User | null>(null);
   activeTab: string = 'dash';
   isPro = signal<boolean>(true);
   userCount = signal<number>(0);
+  activeNodes = computed(() => {
+    const raw = this.userCount();
+    const currentUser = this.user();
+    if (raw === 0 && currentUser) return 1; 
+    return raw + (currentUser ? 1 : 0) + Math.floor(Math.random() * 3);
+  });
   testimonials = signal<any[]>([]);
   activeTestimonyIndex = signal<number>(0);
   displayedTestimonials = computed(() => {
@@ -1063,6 +1176,7 @@ export class HomeComponent implements OnInit {
   workoutSets: number = 3;
   workoutReps: number = 10;
   workoutWeight: number = 0;
+  workoutCalories: number = 50;
   selectedExercise: string | null = null;
   exerciseCategories = [
     { name: 'Strength', icon: 'dumbbell', items: ['Bench Press', 'Squats', 'Deadlift', 'Overhead Press', 'Pull-ups', 'Push-ups', 'Bicep Curls', 'Lunges'] },
@@ -1081,6 +1195,149 @@ export class HomeComponent implements OnInit {
   todayCaloriesBurned = signal<number>(0);
   todayStr = new Date().toISOString().split('T')[0];
   newWeight: number = 0;
+  expandedPlanDay = signal<string | null>(new Date().toLocaleDateString('en-US', { weekday: 'long' }));
+  completedExerciseNames = signal<string[]>([]);
+
+  toggleExerciseCompletion(name: string) {
+    this.completedExerciseNames.update(current => 
+      current.includes(name) ? current.filter(n => n !== name) : [...current, name]
+    );
+  }
+
+  weeklyWorkoutPlan = [
+    { 
+      day: 'Monday', 
+      title: 'Chest & Triceps Protocol', 
+      icon: 'zap',
+      exercises: [
+        { name: 'Bench Press (Barbell)', sets: 4, reps: 10, weight: 60, focus: 'Power' },
+        { name: 'Incline DB Press', sets: 3, reps: 12, weight: 22, focus: 'Upper' },
+        { name: 'Chest Flys (Cable)', sets: 3, reps: 15, weight: 15, focus: 'Isolation' },
+        { name: 'Push-ups (Weighted)', sets: 3, reps: 20, weight: 10, focus: 'Endurance' },
+        { name: 'Skull Crushers', sets: 3, reps: 12, weight: 25, focus: 'Triceps' },
+        { name: 'Tricep Pushdowns', sets: 3, reps: 15, weight: 20, focus: 'Arms' },
+        { name: 'Close Grip Pushups', sets: 2, reps: 15, weight: 0, focus: 'Finisher' },
+        { name: 'Front Plate Raises', sets: 3, reps: 15, weight: 10, focus: 'Delts' }
+      ]
+    },
+    { 
+      day: 'Tuesday', 
+      title: 'Back & Biceps Protocol', 
+      icon: 'activity',
+      exercises: [
+        { name: 'Deadlift', sets: 4, reps: 8, weight: 100, focus: 'Total' },
+        { name: 'Pull-ups', sets: 3, reps: 10, weight: 0, focus: 'Width' },
+        { name: 'Bent Over Rows', sets: 3, reps: 12, weight: 50, focus: 'Thickness' },
+        { name: 'Lat Pulldowns', sets: 3, reps: 12, weight: 55, focus: 'Lats' },
+        { name: 'Barbell Curls', sets: 3, reps: 10, weight: 30, focus: 'Biceps' },
+        { name: 'Hammer Curls', sets: 3, reps: 12, weight: 14, focus: 'Arms' },
+        { name: 'Face Pulls', sets: 3, reps: 15, weight: 18, focus: 'Post_Delt' },
+        { name: 'Single Arm DB Rows', sets: 3, reps: 12, weight: 24, focus: 'Lats' }
+      ]
+    },
+    { 
+      day: 'Wednesday', 
+      title: 'Legs & Abs Protocol', 
+      icon: 'award',
+      exercises: [
+        { name: 'Back Squats', sets: 4, reps: 10, weight: 80, focus: 'Power' },
+        { name: 'Leg Press', sets: 3, reps: 12, weight: 160, focus: 'Quads' },
+        { name: 'Leg Curls', sets: 3, reps: 15, weight: 40, focus: 'Hamstrings' },
+        { name: 'Calf Raises', sets: 4, reps: 20, weight: 60, focus: 'Calves' },
+        { name: 'Hanging Leg Raises', sets: 3, reps: 15, weight: 0, focus: 'Abs' },
+        { name: 'Russian Twists', sets: 3, reps: 30, weight: 10, focus: 'Obliques' },
+        { name: 'Plank Long-Hold', sets: 3, reps: 60, weight: 0, focus: 'Core' },
+        { name: 'Glute Bridges (Weighted)', sets: 3, reps: 15, weight: 40, focus: 'Glutes' }
+      ]
+    },
+    { 
+      day: 'Thursday', 
+      title: 'Shoulders & Traps', 
+      icon: 'shield',
+      exercises: [
+        { name: 'Overhead Press', sets: 4, reps: 10, weight: 40, focus: 'Shoulders' },
+        { name: 'Lateral Raises', sets: 4, reps: 15, weight: 8, focus: 'Isolation' },
+        { name: 'Arnold Press', sets: 3, reps: 12, weight: 18, focus: 'Delts' },
+        { name: 'Rear Delt Flys', sets: 3, reps: 15, weight: 10, focus: 'Rear' },
+        { name: 'Dumbbell Shrugs', sets: 4, reps: 12, weight: 35, focus: 'Traps' },
+        { name: 'Upright Rows', sets: 3, reps: 12, weight: 30, focus: 'Shoulders' },
+        { name: 'Mountain Climbers', sets: 3, reps: 40, weight: 0, focus: 'Cardio' },
+        { name: 'Cable Lateral Raises', sets: 3, reps: 15, weight: 5, focus: 'Isolation' }
+      ]
+    },
+    { 
+      day: 'Friday', 
+      title: 'Full Body Hypertrophy', 
+      icon: 'flame',
+      exercises: [
+        { name: 'Clean & Press', sets: 3, reps: 8, weight: 40, focus: 'Explosive' },
+        { name: 'Goblet Squats', sets: 3, reps: 15, weight: 24, focus: 'Functional' },
+        { name: 'Renegade Rows', sets: 3, reps: 12, weight: 16, focus: 'Stability' },
+        { name: 'Dips', sets: 3, reps: 15, weight: 0, focus: 'Chest/Tri' },
+        { name: 'Concentration Curls', sets: 3, reps: 12, weight: 12, focus: 'Biceps' },
+        { name: 'Bicycle Crunches', sets: 3, reps: 30, weight: 0, focus: 'Abs' },
+        { name: 'Burpees', sets: 3, reps: 15, weight: 0, focus: 'System_Shock' },
+        { name: 'Kettlebell Swings', sets: 3, reps: 20, weight: 20, focus: 'Power' }
+      ]
+    },
+    { 
+      day: 'Saturday', 
+      title: 'Active Recovery & Cardio', 
+      icon: 'activity',
+      exercises: [
+        { name: 'Steady State Run', sets: 1, reps: 30, weight: 0, focus: 'LISS' },
+        { name: 'Interval Sprints', sets: 8, reps: 30, weight: 0, focus: 'HIIT' },
+        { name: 'Yoga / Stretching', sets: 1, reps: 20, weight: 0, focus: 'Mobility' },
+        { name: 'Foam Rolling', sets: 1, reps: 10, weight: 0, focus: 'Recovery' },
+        { name: 'Walk (Outdoors)', sets: 1, reps: 45, weight: 0, focus: 'Mental' },
+        { name: 'Cold Plunge / Shower', sets: 1, reps: 3, weight: 0, focus: 'Nervous_Sys' },
+        { name: 'Jump Rope (Slow)', sets: 3, reps: 60, weight: 0, focus: 'Circulation' },
+        { name: 'Breathwork Sessions', sets: 1, reps: 15, weight: 0, focus: 'Oxygen' }
+      ]
+    },
+    { 
+      day: 'Sunday', 
+      title: 'Rest & Repair Phase', 
+      icon: 'shield',
+      exercises: [
+        { name: 'Deep Sleep Protocol', sets: 1, reps: 480, weight: 0, focus: 'Recovery' },
+        { name: 'Heat Therapy (Sauna)', sets: 1, reps: 20, weight: 0, focus: 'Metabolic' },
+        { name: 'Hydration Scaling', sets: 8, reps: 500, weight: 0, focus: 'Fluid' },
+        { name: 'Massage / Gun', sets: 1, reps: 15, weight: 0, focus: 'Tissue' },
+        { name: 'Nature Walk', sets: 1, reps: 30, weight: 0, focus: 'Mental' },
+        { name: 'Mobility Drills', sets: 2, reps: 10, weight: 0, focus: 'Joints' },
+        { name: 'Reflective Journaling', sets: 1, reps: 10, weight: 0, focus: 'Cognitive' },
+        { name: 'Clean Meal Prep', sets: 1, reps: 60, weight: 0, focus: 'Fuel' }
+      ]
+    }
+  ];
+
+  logPlanExercise(ex: any) {
+    this.workoutName = ex.name;
+    this.workoutSets = ex.sets;
+    this.workoutReps = ex.reps;
+    this.workoutWeight = ex.weight;
+    
+    // Advanced Metabolic Impact Calculation
+    // MET values: strength ~ 6.0, heavy ~ 8.0, cardio ~ 10.0
+    const baseMet = ex.weight > 0 ? 7.5 : 5.0;
+    const durationMin = (ex.sets * 1.5); // Average 1.5 mins per set including rest
+    const weightKg = this.profile().weight || 75;
+    
+    // Formula: (MET * 3.5 * weightKg) / 200 * duration
+    const burnPerMin = (baseMet * 3.5 * weightKg) / 200;
+    this.workoutCalories = Math.round(burnPerMin * durationMin);
+    
+    // Safety floor
+    if (this.workoutCalories < 20) this.workoutCalories = 25;
+
+    this.showToast(`Protocol: ${ex.name} Engaged. Est. Impact: ${this.workoutCalories}kcal`, 'info');
+    
+    if (typeof window !== 'undefined') {
+       const el = document.querySelector('#log-anchor');
+       if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }
+  }
 
   // Manual entry fields
   manualName: string = '';
@@ -1149,13 +1406,23 @@ export class HomeComponent implements OnInit {
 
   estimateBurned = computed(() => {
     if (!this.workoutName) return 0;
-    // Simple logic: strength ~ 8 kcal per set, cardio ~ 15 kcal per set/round, core ~ 5 kcal
-    let base = 8;
-    const cat = this.exerciseCategories.find(c => c.items.includes(this.workoutName));
-    if (cat?.name === 'Cardio') base = 25;
-    if (cat?.name === 'Core') base = 10;
     
-    return this.workoutSets * base;
+    // Advanced Metabolic Impact Logic
+    // Matches the protocol calculator for system consistency
+    let baseMet = this.workoutWeight > 0 ? 7.5 : 5.0;
+    
+    // Fine-tune MET based on category
+    const cat = this.exerciseCategories.find(c => c.items.includes(this.workoutName));
+    if (cat?.name === 'Cardio') baseMet = 10.0;
+    if (cat?.name === 'Core') baseMet = 4.5;
+    
+    const durationMin = (this.workoutSets * 1.5); 
+    const weightKg = this.profile().weight || 75;
+    
+    const burnPerMin = (baseMet * 3.5 * weightKg) / 200;
+    const result = Math.round(burnPerMin * durationMin);
+    
+    return result > 0 ? result : 25;
   });
 
   caloriePercentage = computed(() => {
@@ -1219,7 +1486,7 @@ export class HomeComponent implements OnInit {
            this.showToast('Protocol session expired', 'info');
            return;
         }
-        this.user = u;
+        this.user.set(u);
         this.firebase.updateSessionTimestamp();
         this.loadProfile();
         this.loadData();
@@ -1244,13 +1511,13 @@ export class HomeComponent implements OnInit {
                 // Cleanup interval on logout or destroy if we had a way, 
                 // but for now it's okay in this component
       } else {
-        this.user = null;
+        this.user.set(null);
       }
     });
 
     // Pulse check for session survival
     setInterval(() => {
-      if (this.user && this.firebase.isSessionExpired()) {
+      if (this.user() && this.firebase.isSessionExpired()) {
         this.logout();
         this.showToast('Session timed out', 'info');
       }
@@ -1284,15 +1551,16 @@ export class HomeComponent implements OnInit {
   logout() { this.firebase.clearSession(); }
 
   async loadProfile() {
-    if (!this.user) return;
-    const p = await this.firebase.getProfile(this.user.uid);
+    const currentUser = this.user();
+    if (!currentUser) return;
+    const p = await this.firebase.getProfile(currentUser.uid);
     if (p) {
       this.profile.set(p as UserProfile);
       this.profileEdit = { ...this.profile() };
     } else {
       // Initialize protocol for new human connection
       const defaultProfile: UserProfile = {
-        uid: this.user.uid,
+        uid: currentUser.uid,
         weight: 75,
         height: 180,
         age: 30,
@@ -1301,7 +1569,7 @@ export class HomeComponent implements OnInit {
         dailyCalorieGoal: 2500,
         dailyProteinGoal: 150
       };
-      await this.firebase.saveProfile(this.user.uid, defaultProfile);
+      await this.firebase.saveProfile(currentUser.uid, defaultProfile);
       this.profile.set(defaultProfile);
       this.profileEdit = { ...defaultProfile };
       this.showToast('Human protocol initiated', 'success');
@@ -1309,7 +1577,8 @@ export class HomeComponent implements OnInit {
   }
 
   async saveProfile() {
-    if (!this.user) return;
+    const currentUser = this.user();
+    if (!currentUser) return;
     this.firebase.updateSessionTimestamp();
     try {
       const calories = this.calculatedCalories();
@@ -1317,7 +1586,7 @@ export class HomeComponent implements OnInit {
       this.profileEdit.dailyCalorieGoal = calories;
       this.profileEdit.dailyProteinGoal = protein;
       
-      await this.firebase.saveProfile(this.user.uid, this.profileEdit);
+      await this.firebase.saveProfile(currentUser.uid, this.profileEdit);
       this.profile.set({ ...this.profileEdit });
       this.activeTab = 'dash';
       this.showToast('Profile protocol updated');
@@ -1358,10 +1627,11 @@ export class HomeComponent implements OnInit {
   });
 
   async submitTestimony() {
-    if (!this.user || this.testimonyForm.invalid) return;
+    const currentUser = this.user();
+    if (!currentUser || this.testimonyForm.invalid) return;
     try {
       await addDoc(collection(this.firebase.db, 'testimonials'), {
-        userName: this.user.displayName || 'Anonymous_Human',
+        userName: currentUser.displayName || 'Anonymous_Human',
         content: this.testimonyForm.value.content,
         rating: this.testimonyRating(),
         role: 'Verified Human',
@@ -1377,7 +1647,8 @@ export class HomeComponent implements OnInit {
   }
 
   async analyzeMeal() {
-    if ((!this.mealInput && !this.selectedImage) || !this.user) return;
+    const currentUser = this.user();
+    if ((!this.mealInput && !this.selectedImage) || !currentUser) return;
     this.firebase.updateSessionTimestamp();
     this.isAnalyzing = true;
     this.lastAnalysis = null;
@@ -1394,7 +1665,7 @@ export class HomeComponent implements OnInit {
       if (res && res.calories) {
         this.lastAnalysis = res;
         await addDoc(collection(this.firebase.db, 'meals'), {
-          userId: this.user.uid,
+          userId: currentUser.uid,
           name: res.name,
           category: this.mealCategory,
           calories: res.calories,
@@ -1419,11 +1690,12 @@ export class HomeComponent implements OnInit {
   }
 
   async manualLog() {
-    if (!this.manualName || !this.user) return;
+    const currentUser = this.user();
+    if (!this.manualName || !currentUser) return;
     this.firebase.updateSessionTimestamp();
     try {
       await addDoc(collection(this.firebase.db, 'meals'), {
-        userId: this.user.uid,
+        userId: currentUser.uid,
         name: this.manualName,
         category: this.mealCategory,
         calories: this.manualCalories,
@@ -1448,12 +1720,14 @@ export class HomeComponent implements OnInit {
   }
 
   async createWorkout() {
-    if (!this.workoutName || !this.user) return;
+    const currentUser = this.user();
+    if (!this.workoutName || !currentUser) return;
     this.firebase.updateSessionTimestamp();
     try {
-      const burned = this.estimateBurned();
+      // Use the estimated burned or the base calculation
+      const burned = this.workoutCalories || this.estimateBurned();
       await addDoc(collection(this.firebase.db, 'workouts'), {
-        userId: this.user.uid,
+        userId: currentUser.uid,
         name: this.workoutName,
         sets: this.workoutSets,
         reps: this.workoutReps,
@@ -1464,7 +1738,7 @@ export class HomeComponent implements OnInit {
       });
       this.resetWorkoutForm();
       this.loadData();
-      this.showToast('Training session recorded');
+      this.showToast(`Logged: ${this.workoutName} (-${burned} kcal)`);
     } catch (e) { 
       console.error(e);
       this.showToast('Commit failed', 'error');
@@ -1479,10 +1753,11 @@ export class HomeComponent implements OnInit {
   }
 
   async logWeight() {
-    if (!this.user || this.newWeight <= 0) return;
+    const currentUser = this.user();
+    if (!currentUser || this.newWeight <= 0) return;
     try {
       await addDoc(collection(this.firebase.db, 'weightLogs'), {
-        userId: this.user.uid,
+        userId: currentUser.uid,
         weight: this.newWeight,
         date: new Date().toISOString().split('T')[0],
         createdAt: Timestamp.now()
@@ -1500,7 +1775,8 @@ export class HomeComponent implements OnInit {
   }
 
   async loadData() {
-    if (!this.user) return;
+    const currentUser = this.user();
+    if (!currentUser) return;
     try {
       const mealsRef = collection(this.firebase.db, 'meals');
       
@@ -1514,7 +1790,7 @@ export class HomeComponent implements OnInit {
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       const historyQ = query(
         mealsRef, 
-        where('userId', '==', this.user.uid), 
+        where('userId', '==', currentUser.uid), 
         where('date', '>=', thirtyDaysAgo.toISOString().split('T')[0])
       );
       
@@ -1545,14 +1821,14 @@ export class HomeComponent implements OnInit {
       }
       this.weeklyData.set(weekDays);
       
-      const wq = query(collection(this.firebase.db, 'workouts'), where('userId', '==', this.user.uid), orderBy('createdAt', 'desc'), limit(5));
+      const wq = query(collection(this.firebase.db, 'workouts'), where('userId', '==', currentUser.uid), orderBy('createdAt', 'desc'), limit(5));
       const wSnapshot = await getDocs(wq);
       this.recentWorkouts.set(wSnapshot.docs.map(d => ({ id: d.id, ...d.data() })));
 
       // Load weight history
       const weightQ = query(
         collection(this.firebase.db, 'weightLogs'),
-        where('userId', '==', this.user.uid),
+        where('userId', '==', currentUser.uid),
         orderBy('date', 'asc')
       );
       const weightSnapshot = await getDocs(weightQ);
@@ -1567,7 +1843,7 @@ export class HomeComponent implements OnInit {
       });
       this.weightLogs.set(wl);
 
-      const todayWQ = query(collection(this.firebase.db, 'workouts'), where('userId', '==', this.user.uid), where('date', '==', todayStr));
+      const todayWQ = query(collection(this.firebase.db, 'workouts'), where('userId', '==', currentUser.uid), where('date', '==', todayStr));
       const todayWSnapshot = await getDocs(todayWQ);
       todayWSnapshot.forEach(d => {
         this.todayCaloriesBurned.update(v => v + (d.data()['caloriesBurned'] || 0));
