@@ -96,7 +96,7 @@ interface UserProfile {
 
       <main class="max-w-4xl mx-auto p-6">
         <!-- Dashboard View -->
-        <div *ngIf="user && activeTab === 'dash'" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div *ngIf="user() && activeTab === 'dash'" class="grid grid-cols-1 md:grid-cols-4 gap-4">
           
           <!-- BMI & Stats Row -->
           <div class="md:col-span-4 grid grid-cols-2 md:grid-cols-6 gap-4 mb-2">
@@ -388,7 +388,7 @@ interface UserProfile {
         </div>
 
         <!-- Insights View -->
-        <section *ngIf="user && activeTab === 'insights'" class="space-y-6">
+        <section *ngIf="user() && activeTab === 'insights'" class="space-y-6">
            <div class="bg-slate-900 border border-slate-800 p-8 rounded-[3rem]">
               <div class="flex justify-between items-start mb-10">
                  <div>
@@ -502,7 +502,7 @@ interface UserProfile {
         </section>
 
         <!-- Scanner View (Eat) -->
-        <section *ngIf="user && activeTab === 'eat'" class="space-y-6">
+        <section *ngIf="user() && activeTab === 'eat'" class="space-y-6">
           <div [class.bg-white]="!isManualMode" [class.text-slate-950]="!isManualMode" [class.bg-slate-900]="isManualMode" [class.text-white]="isManualMode" class="p-10 rounded-[3rem] shadow-2xl relative overflow-hidden min-h-[460px] flex flex-col justify-end transition-colors duration-500">
             
             <div *ngIf="!isManualMode" class="relative z-10 space-y-6">
@@ -734,7 +734,7 @@ interface UserProfile {
         </section>
 
         <!-- Profile View -->
-        <section *ngIf="user && activeTab === 'goals'" class="space-y-6">
+        <section *ngIf="user() && activeTab === 'goals'" class="space-y-6">
            <div class="bg-slate-900 border border-slate-800 p-8 rounded-[2.5rem] space-y-8">
               <div>
                 <h2 class="text-4xl font-black tracking-tighter text-white uppercase italic text-balance">Biometrics_V1</h2>
@@ -819,7 +819,7 @@ interface UserProfile {
         </section>
 
         <!-- Workout View -->
-        <section *ngIf="user && activeTab === 'work'" class="space-y-6">
+        <section *ngIf="user() && activeTab === 'work'" class="space-y-6">
           <!-- Weekly Protocol Selector -->
           <div class="bg-slate-900 border border-slate-800 p-8 rounded-[3rem] space-y-6">
              <div class="flex justify-between items-end">
@@ -1029,7 +1029,7 @@ interface UserProfile {
         </section>
 
         <!-- Login Prompt (Trendy Version) -->
-        <div *ngIf="!user" class="min-h-[80vh] flex flex-col justify-center items-center relative overflow-hidden px-4">
+        <div *ngIf="!user()" class="min-h-[80vh] flex flex-col justify-center items-center relative overflow-hidden px-4">
            <!-- Aesthetic Background Elements -->
            <div class="absolute top-1/4 -left-20 w-96 h-96 bg-lime-400/20 blur-[120px] rounded-full animate-pulse"></div>
            <div class="absolute bottom-1/4 -right-20 w-96 h-96 bg-blue-500/10 blur-[120px] rounded-full delay-1000 animate-pulse"></div>
