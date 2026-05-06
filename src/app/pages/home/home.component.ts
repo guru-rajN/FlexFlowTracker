@@ -61,7 +61,16 @@ interface UserProfile {
             </div>
             FlexFlow
           </h1>
-          <p class="text-slate-500 text-[10px] font-mono uppercase tracking-widest mt-1">Status: Optimized</p>
+          <div class="flex items-center gap-2 mt-1">
+            <p class="text-slate-500 text-[10px] font-mono uppercase tracking-widest">Status: Optimized</p>
+            <div *ngIf="firebase.isConnected() !== null" class="flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-slate-800 bg-slate-900/50">
+               <div class="w-1.5 h-1.5 rounded-full animate-pulse" [class.bg-emerald-400]="firebase.isConnected()" [class.bg-red-500]="!firebase.isConnected()"></div>
+               <span class="text-[8px] font-bold uppercase tracking-tighter" [class.text-emerald-400/80]="firebase.isConnected()" [class.text-red-500/80]="!firebase.isConnected()">
+                 {{ firebase.isConnected() ? 'Synchronized' : 'Offline' }}
+               </span>
+               <button *ngIf="!firebase.isConnected()" (click)="firebase.testConnection()" class="text-[7px] text-red-400 underline ml-1 hover:text-white transition-colors">Retry</button>
+            </div>
+          </div>
         </div>
         
         <div *ngIf="!user">
@@ -70,7 +79,10 @@ interface UserProfile {
           </button>
         </div>
         
-        <div *ngIf="user" class="flex items-center gap-4 bg-slate-900 border border-slate-800 p-2 pl-4 rounded-2xl">
+        <div *ngIf="user" class="flex items-center gap-4 bg-slate-900 border border-slate-800 p-2 pl-4 rounded-2xl relative overflow-hidden">
+          <div *ngIf="isPro()" class="absolute -top-1 -right-4 bg-lime-400 text-slate-950 text-[7px] font-black uppercase px-6 py-1 rotate-12 shadow-sm">
+             PRO
+          </div>
           <div class="text-right">
              <p class="text-[9px] uppercase tracking-widest text-slate-500 font-bold">User session</p>
              <p class="text-xs font-mono text-lime-400">{{ user.displayName?.split(' ')[0] }}</p>
@@ -505,6 +517,20 @@ interface UserProfile {
               </div>
 
               <h2 class="text-6xl font-black tracking-tighter leading-[0.8] uppercase italic">Visual<br/>Input</h2>
+
+              <!-- API Key Missing Warning -->
+              <div *ngIf="isApiKeyMissing()" class="bg-amber-500/10 border border-amber-500/20 p-5 rounded-2xl flex flex-col gap-3 mb-6 animate-in fade-in slide-in-from-bottom-2">
+                 <div class="flex items-center gap-3 text-amber-600">
+                    <lucide-icon name="key" size="20" class="shrink-0"></lucide-icon>
+                    <p class="text-[11px] font-black uppercase tracking-widest italic">Neural Link Offline</p>
+                 </div>
+                 <p class="text-[10px] text-slate-600 font-medium leading-relaxed">
+                    To enable the AI scanner, please add <code class="bg-amber-100 px-1 rounded font-bold">GEMINI_API_KEY</code> in the **Secrets** or **Environment Variables** section of the Settings menu (Gear Icon ⚙️ in the bottom-left corner).
+                 </p>
+                 <div class="flex gap-2 mt-1">
+                    <div class="text-[8px] bg-amber-100 text-amber-700 px-2 py-1 rounded border border-amber-200 uppercase font-bold tracking-tighter">Required for Vision Analysis</div>
+                 </div>
+              </div>
               
               <!-- Category Selector -->
               <div class="flex gap-2 mb-2 p-1 bg-slate-100 rounded-xl w-fit">
@@ -520,35 +546,70 @@ interface UserProfile {
               </div>
               
               <!-- Last Result Card -->
-              <div *ngIf="lastAnalysis" class="bg-lime-400/10 border border-lime-400/20 p-6 rounded-3xl animate-in fade-in zoom-in duration-500">
-                 <div class="flex justify-between items-start mb-4">
+              <div *ngIf="lastAnalysis" 
+                   class="p-6 rounded-3xl animate-in fade-in zoom-in duration-500 shadow-2xl relative overflow-hidden"
+                   [class.bg-emerald-500/10]="mealLoggedSuccessfully()"
+                   [class.border-emerald-500/20]="mealLoggedSuccessfully()"
+                   [class.bg-lime-400/10]="!mealLoggedSuccessfully()"
+                   [class.border-lime-400/20]="!mealLoggedSuccessfully()"
+                   class="border">
+                 
+                 <!-- Status Watermark -->
+                 <div *ngIf="mealLoggedSuccessfully()" class="absolute -right-4 -bottom-4 text-emerald-500/10 -rotate-12 select-none">
+                    <lucide-icon name="award" size="120"></lucide-icon>
+                 </div>
+
+                 <div class="flex justify-between items-start mb-4 relative z-10">
                     <div>
-                       <p class="text-[8px] font-bold text-lime-600 uppercase tracking-widest">Protocol Verified</p>
-                       <p class="text-2xl font-black text-slate-900 uppercase italic">{{ lastAnalysis.name }}</p>
+                       <div class="flex items-center gap-2 mb-1">
+                          <p class="text-[8px] font-bold uppercase tracking-widest" 
+                             [class.text-emerald-500]="mealLoggedSuccessfully()"
+                             [class.text-lime-600]="!mealLoggedSuccessfully()">
+                             {{ mealLoggedSuccessfully() ? 'Protocol Update Success' : 'Neural Verification Complete' }}
+                          </p>
+                          <div *ngIf="mealLoggedSuccessfully()" class="bg-emerald-500/20 px-2 py-0.5 rounded-full flex items-center gap-1">
+                             <div class="w-1 h-1 bg-emerald-400 rounded-full animate-pulse"></div>
+                             <span class="text-[7px] font-black text-emerald-400 uppercase tracking-tighter">Deposited</span>
+                          </div>
+                       </div>
+                       <p class="text-2xl font-black text-slate-900 uppercase italic leading-none">{{ lastAnalysis.name }}</p>
                     </div>
-                    <button (click)="lastAnalysis = null" class="p-1 hover:bg-lime-400/20 rounded-full transition-colors">
+                    <button (click)="lastAnalysis = null" class="p-1 hover:bg-slate-950/5 rounded-full transition-colors">
                        <lucide-icon name="plus" class="rotate-45 text-slate-400" size="16"></lucide-icon>
                     </button>
                  </div>
-                 <div class="grid grid-cols-4 gap-2">
-                    <div class="text-center">
+
+                 <div class="grid grid-cols-4 gap-2 relative z-10">
+                    <div class="bg-white/40 backdrop-blur-sm p-2 rounded-xl text-center border border-white/20">
                        <p class="text-[7px] text-slate-500 font-bold uppercase">Kcal</p>
                        <p class="text-sm font-black text-slate-900">{{ lastAnalysis.calories }}</p>
                     </div>
-                    <div class="text-center">
+                    <div class="bg-white/40 backdrop-blur-sm p-2 rounded-xl text-center border border-white/20">
                        <p class="text-[7px] text-slate-500 font-bold uppercase">Prot</p>
                        <p class="text-sm font-black text-slate-900">{{ lastAnalysis.protein }}g</p>
                     </div>
-                    <div class="text-center">
+                    <div class="bg-white/40 backdrop-blur-sm p-2 rounded-xl text-center border border-white/20">
                        <p class="text-[7px] text-slate-500 font-bold uppercase">Carb</p>
                        <p class="text-sm font-black text-slate-900">{{ lastAnalysis.carbs }}g</p>
                     </div>
-                    <div class="text-center">
+                    <div class="bg-white/40 backdrop-blur-sm p-2 rounded-xl text-center border border-white/20">
                        <p class="text-[7px] text-slate-500 font-bold uppercase">Fat</p>
                        <p class="text-sm font-black text-slate-900">{{ lastAnalysis.fats }}g</p>
                     </div>
                  </div>
-                 <p class="text-[9px] text-slate-500 mt-4 leading-tight italic">{{ lastAnalysis.explanation }}</p>
+
+                 <div class="mt-4 flex flex-col gap-3 relative z-10">
+                    <p class="text-[9px] text-slate-500 leading-tight italic">{{ lastAnalysis.explanation }}</p>
+                    
+                    <div *ngIf="mealLoggedSuccessfully()" class="flex gap-2">
+                       <button (click)="activeTab = 'dash'" class="bg-slate-950 text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-500 transition-all">
+                          View In Dashboard
+                       </button>
+                       <button (click)="lastAnalysis = null" class="text-slate-500 border border-slate-200 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-white transition-all">
+                          Scan Another
+                       </button>
+                    </div>
+                 </div>
               </div>
 
               <div *ngIf="selectedImage" class="relative group w-40 h-40 bg-slate-100 rounded-3xl overflow-hidden shadow-lg mb-4 border-4 border-slate-200">
@@ -577,13 +638,19 @@ interface UserProfile {
                 <button 
                   (click)="analyzeMeal()" 
                   [disabled]="isAnalyzing || (!mealInput && !selectedImage)"
-                  class="bg-slate-950 text-white px-8 py-5 rounded-2xl hover:bg-lime-400 hover:text-slate-950 disabled:opacity-30 transition-all flex items-center justify-center cursor-pointer font-black tracking-widest uppercase italic gap-3"
+                  class="bg-slate-950 text-white px-8 py-5 rounded-2xl hover:bg-lime-400 hover:text-slate-950 disabled:opacity-30 transition-all flex items-center justify-center cursor-pointer font-black tracking-widest uppercase italic gap-3 relative overflow-hidden"
                 >
-                  <lucide-icon [name]="isAnalyzing ? 'activity' : 'chevron-right'" [class.animate-spin]="isAnalyzing"></lucide-icon>
-                  <span>{{ isAnalyzing ? 'Processing' : 'Analyze' }}</span>
+                  <div *ngIf="isAnalyzing" class="absolute inset-0 bg-lime-400/20 animate-pulse"></div>
+                  <lucide-icon [name]="isAnalyzing ? 'activity' : 'chevron-right'" [class.animate-pulse]="isAnalyzing"></lucide-icon>
+                  <span class="relative z-10">{{ isAnalyzing ? 'Decoding Metabolism...' : 'Analyze' }}</span>
                 </button>
               </div>
-              <p *ngIf="isAnalyzing" class="text-xs font-mono text-slate-400 animate-pulse tracking-widest uppercase">Initializing multimodel analysis via Gemini_3.0...</p>
+              <div *ngIf="isAnalyzing" class="flex items-center gap-3 animate-in fade-in duration-500">
+                 <div class="h-1 flex-1 bg-slate-100 rounded-full overflow-hidden">
+                    <div class="h-full bg-slate-950 animate-progress origin-left"></div>
+                 </div>
+                 <p class="text-[9px] font-mono text-slate-400 tracking-[0.2em] uppercase">Processing Visual Telemetry</p>
+              </div>
             </div>
 
             <!-- Manual Entry Interface -->
@@ -954,11 +1021,20 @@ interface UserProfile {
       -webkit-appearance: none;
       margin: 0;
     }
+    @keyframes progress {
+      0% { transform: scaleX(0); }
+      50% { transform: scaleX(0.7); }
+      100% { transform: scaleX(1); }
+    }
+    .animate-progress {
+      animation: progress 2s infinite linear;
+    }
   `]
 })
 export class HomeComponent implements OnInit {
   user: User | null = null;
   activeTab: string = 'dash';
+  isPro = signal<boolean>(true);
   userCount = signal<number>(0);
   testimonials = signal<any[]>([]);
   activeTestimonyIndex = signal<number>(0);
@@ -995,6 +1071,7 @@ export class HomeComponent implements OnInit {
   ];
   isAnalyzing: boolean = false;
   lastAnalysis: any = null;
+  mealLoggedSuccessfully = signal<boolean>(false);
   recentMeals = signal<any[]>([]);
   recentWorkouts = signal<any[]>([]);
   weightLogs = signal<{date: string, weight: number, day: string}[]>([]);
@@ -1098,6 +1175,10 @@ export class HomeComponent implements OnInit {
     return this.circumference - (percent / 100) * this.circumference;
   });
 
+  isApiKeyMissing = computed(() => {
+    return typeof GEMINI_API_KEY === 'undefined' || !GEMINI_API_KEY || GEMINI_API_KEY === 'MY_GEMINI_API_KEY' || GEMINI_API_KEY === '';
+  });
+
   navTabs = [
     { id: 'dash', icon: 'flame', label: 'Dash' },
     { id: 'insights', icon: 'activity', label: 'Stats' },
@@ -1181,13 +1262,21 @@ export class HomeComponent implements OnInit {
       const provider = new GoogleAuthProvider();
       // Adding custom parameters can sometimes help with popup window issues
       provider.setCustomParameters({ prompt: 'select_account' });
-      await signInWithPopup(this.firebase.auth, provider);
-      this.firebase.updateSessionTimestamp();
+      const result = await signInWithPopup(this.firebase.auth, provider);
+      if (result.user) {
+        this.firebase.updateSessionTimestamp();
+        this.showToast('Human identity verified', 'success');
+      }
     } catch (e: any) { 
       console.error('Login Error:', e);
-      // Fallback for COOP/Popup issues in some dev environments
-      if (e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user' || e.message?.includes('Cross-Origin-Opener-Policy')) {
-        this.showToast('Auth error detected. Please try again or check browser settings.', 'error');
+      if (e.code === 'auth/popup-closed-by-user') {
+        this.showToast('Login canceled (popup closed)', 'info');
+      } else if (e.code === 'auth/popup-blocked') {
+        this.showToast('Login blocked by browser', 'error');
+      } else if (e.message?.includes('Cross-Origin-Opener-Policy')) {
+        this.showToast('Browser security error (COOP)', 'error');
+      } else {
+        this.showToast('Protocol handshake failed', 'error');
       }
     }
   }
@@ -1292,6 +1381,7 @@ export class HomeComponent implements OnInit {
     this.firebase.updateSessionTimestamp();
     this.isAnalyzing = true;
     this.lastAnalysis = null;
+    this.mealLoggedSuccessfully.set(false);
     try {
       let res;
       if (this.selectedImage) {
@@ -1314,10 +1404,11 @@ export class HomeComponent implements OnInit {
           createdAt: Timestamp.now(),
           date: new Date().toISOString().split('T')[0]
         });
+        this.mealLoggedSuccessfully.set(true);
         this.mealInput = '';
         this.selectedImage = null;
         this.loadData();
-        this.showToast(`Logged: ${res.name} (${res.calories} kcal)`);
+        this.showToast(`Logged: ${res.name} (${res.calories} kcal)`, 'success');
       }
     } catch (e: any) { 
       console.error(e);
@@ -1342,8 +1433,6 @@ export class HomeComponent implements OnInit {
         createdAt: Timestamp.now(),
         date: new Date().toISOString().split('T')[0]
       });
-      this.showToast(`Logged: ${this.manualName}`);
-      this.loadData();
       this.isManualMode = false;
       this.manualName = '';
       this.manualCalories = 0;
@@ -1351,6 +1440,8 @@ export class HomeComponent implements OnInit {
       this.manualCarbs = 0;
       this.manualFats = 0;
       this.activeTab = 'dash';
+      this.loadData();
+      this.showToast(`Logged: ${this.manualName}`, 'success');
     } catch (e) {
       this.showToast('Manual log failed', 'error');
     }
@@ -1410,76 +1501,81 @@ export class HomeComponent implements OnInit {
 
   async loadData() {
     if (!this.user) return;
-    const mealsRef = collection(this.firebase.db, 'meals');
-    
-    this.todayCalories.set(0);
-    this.todayProtein.set(0);
-    this.todayCaloriesBurned.set(0);
-    const todayStr = new Date().toISOString().split('T')[0];
-    
-    // Load last 30 days for history
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const historyQ = query(
-      mealsRef, 
-      where('userId', '==', this.user.uid), 
-      where('date', '>=', thirtyDaysAgo.toISOString().split('T')[0])
-    );
-    
-    const historySnapshot = await getDocs(historyQ);
-    const mealLogs: any[] = [];
-    historySnapshot.forEach(doc => {
-      const data = doc.data();
-      mealLogs.push(data);
-      if (data['date'] === todayStr) {
-        this.todayCalories.update(v => v + (data['calories'] || 0));
-        this.todayProtein.update(v => v + (data['protein'] || 0));
-      }
-    });
-
-    this.recentMeals.set(mealLogs.filter(m => m.date === todayStr));
-
-    // Process Weekly Data (last 7 days)
-    const weekDays = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const dStr = d.toISOString().split('T')[0];
-      const dayName = d.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
-      const dayKcal = mealLogs
-        .filter(m => m.date === dStr)
-        .reduce((sum, m) => sum + (m.calories || 0), 0);
-      weekDays.push({ date: dStr, kcal: dayKcal, day: dayName });
-    }
-    this.weeklyData.set(weekDays);
-    
-    const wq = query(collection(this.firebase.db, 'workouts'), where('userId', '==', this.user.uid), orderBy('createdAt', 'desc'), limit(5));
-    const wSnapshot = await getDocs(wq);
-    this.recentWorkouts.set(wSnapshot.docs.map(d => ({ id: d.id, ...d.data() })));
-
-    // Load weight history
-    const weightQ = query(
-      collection(this.firebase.db, 'weightLogs'),
-      where('userId', '==', this.user.uid),
-      orderBy('date', 'asc')
-    );
-    const weightSnapshot = await getDocs(weightQ);
-    const wl: any[] = [];
-    weightSnapshot.forEach(d => {
-      const data = d.data();
-      wl.push({
-        date: data['date'],
-        weight: data['weight'],
-        day: new Date(data['date']).toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()
+    try {
+      const mealsRef = collection(this.firebase.db, 'meals');
+      
+      this.todayCalories.set(0);
+      this.todayProtein.set(0);
+      this.todayCaloriesBurned.set(0);
+      const todayStr = new Date().toISOString().split('T')[0];
+      
+      // Load last 30 days for history
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const historyQ = query(
+        mealsRef, 
+        where('userId', '==', this.user.uid), 
+        where('date', '>=', thirtyDaysAgo.toISOString().split('T')[0])
+      );
+      
+      const historySnapshot = await getDocs(historyQ);
+      const mealLogs: any[] = [];
+      historySnapshot.forEach(doc => {
+        const data = doc.data();
+        mealLogs.push(data);
+        if (data['date'] === todayStr) {
+          this.todayCalories.update(v => v + (data['calories'] || 0));
+          this.todayProtein.update(v => v + (data['protein'] || 0));
+        }
       });
-    });
-    this.weightLogs.set(wl);
 
-    const todayWQ = query(collection(this.firebase.db, 'workouts'), where('userId', '==', this.user.uid), where('date', '==', todayStr));
-    const todayWSnapshot = await getDocs(todayWQ);
-    todayWSnapshot.forEach(d => {
-      this.todayCaloriesBurned.update(v => v + (d.data()['caloriesBurned'] || 0));
-    });
+      this.recentMeals.set(mealLogs.filter(m => m.date === todayStr));
+
+      // Process Weekly Data (last 7 days)
+      const weekDays = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const dStr = d.toISOString().split('T')[0];
+        const dayName = d.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
+        const dayKcal = mealLogs
+          .filter(m => m.date === dStr)
+          .reduce((sum, m) => sum + (m.calories || 0), 0);
+        weekDays.push({ date: dStr, kcal: dayKcal, day: dayName });
+      }
+      this.weeklyData.set(weekDays);
+      
+      const wq = query(collection(this.firebase.db, 'workouts'), where('userId', '==', this.user.uid), orderBy('createdAt', 'desc'), limit(5));
+      const wSnapshot = await getDocs(wq);
+      this.recentWorkouts.set(wSnapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+
+      // Load weight history
+      const weightQ = query(
+        collection(this.firebase.db, 'weightLogs'),
+        where('userId', '==', this.user.uid),
+        orderBy('date', 'asc')
+      );
+      const weightSnapshot = await getDocs(weightQ);
+      const wl: any[] = [];
+      weightSnapshot.forEach(d => {
+        const data = d.data();
+        wl.push({
+          date: data['date'],
+          weight: data['weight'],
+          day: new Date(data['date']).toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()
+        });
+      });
+      this.weightLogs.set(wl);
+
+      const todayWQ = query(collection(this.firebase.db, 'workouts'), where('userId', '==', this.user.uid), where('date', '==', todayStr));
+      const todayWSnapshot = await getDocs(todayWQ);
+      todayWSnapshot.forEach(d => {
+        this.todayCaloriesBurned.update(v => v + (d.data()['caloriesBurned'] || 0));
+      });
+    } catch (e) {
+      console.error('Core sync error:', e);
+      this.showToast('Data synchronization error', 'error');
+    }
   }
 
   getCaloriesByCategory(category: string): number {

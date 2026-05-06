@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 import { initializeApp, getApp, getApps, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { getFirestore, Firestore, doc, getDocFromServer, setDoc, getDoc, updateDoc, increment, onSnapshot } from 'firebase/firestore';
@@ -87,13 +87,26 @@ export class FirebaseService {
     throw new Error(JSON.stringify(errInfo));
   }
 
+  public isConnected = signal<boolean | null>(null);
+
   async testConnection() {
     try {
-      await getDocFromServer(doc(this.db, 'test', 'connection'));
-      console.log('Firebase connection successful');
-    } catch (error) {
-      if (error instanceof Error && error.message.includes('the client is offline')) {
-        console.error("Please check your Firebase configuration.");
+      // Probing connection
+      const snap = await getDocFromServer(doc(this.db, 'test', 'connection'));
+      this.isConnected.set(true);
+      console.log('Firebase Protocol: Link Synchronized');
+    } catch (error: any) {
+      if (error.code === 'permission-denied') {
+        // If we get permission denied, the server IS reached but blocking this specific path
+        // This confirms the connection is active
+        this.isConnected.set(true);
+        console.log('Firebase Protocol: Link Reached (Secured Path)');
+      } else if (error.message?.includes('the client is offline') || error.code === 'unavailable') {
+        this.isConnected.set(false);
+        console.warn('Firebase Protocol: Link Offline');
+      } else {
+        this.isConnected.set(false);
+        console.error('Firebase Protocol: Handshake Failed', error);
       }
     }
   }

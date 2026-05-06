@@ -96,5 +96,10 @@ service cloud.firestore {
         && request.resource.data.rating <= 5;
       allow update, delete: if false;
     }
+
+    // Health check
+    match /test/connection {
+      allow read: if true;
+    }
   }
 }

@@ -110,6 +110,14 @@
         "weight": { "type": "number" }
       },
       "required": ["exerciseId", "reps", "weight"]
+    },
+    "HealthCheck": {
+      "title": "Health Check",
+      "description": "Minimal document for connectivity verification",
+      "type": "object",
+      "properties": {
+        "status": { "type": "string" }
+      }
     }
   },
   "firestore": {
@@ -144,6 +152,10 @@
     "testimonials": {
       "schema": "Testimonial",
       "description": "Public user testimonials"
+    },
+    "test": {
+      "schema": "HealthCheck",
+      "description": "Connection probe path"
     }
   }
 }
