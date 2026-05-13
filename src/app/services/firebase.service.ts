@@ -54,6 +54,10 @@ export class FirebaseService {
     localStorage.setItem('flexflow_last_active', Date.now().toString());
   }
 
+  clearSessionTimestamp() {
+    localStorage.removeItem('flexflow_last_active');
+  }
+
   isSessionExpired(): boolean {
     const lastActive = localStorage.getItem('flexflow_last_active');
     if (!lastActive) return false;

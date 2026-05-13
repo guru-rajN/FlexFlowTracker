@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, signal } from '@angular/core';
+import { Component, OnInit, computed, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormControl, Validators, FormGroup } from '@angular/forms';
 import { FirebaseService } from '../../services/firebase.service';
@@ -28,6 +28,7 @@ interface UserProfile {
     ReactiveFormsModule, 
     LucideAngularModule
   ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-screen bg-slate-950 text-slate-100 font-sans pb-28">
       <!-- Toast Notifications -->
@@ -53,89 +54,88 @@ interface UserProfile {
         </div>
       </div>
       <!-- Header -->
-      <header class="p-6 flex justify-between items-end bg-slate-950/50 backdrop-blur-md sticky top-0 z-50">
+      <header class="p-4 md:p-6 flex justify-between items-center md:items-end bg-slate-950/50 backdrop-blur-md sticky top-0 z-50">
         <div>
-          <h1 class="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-            <div class="bg-lime-400 p-1.5 rounded-lg text-slate-950 flex items-center justify-center">
-              <lucide-icon name="flame" size="20"></lucide-icon>
+          <h1 class="text-xl md:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+            <div class="bg-lime-400 p-1.5 rounded-lg text-slate-950 flex items-center justify-center shrink-0">
+              <lucide-icon name="flame" size="18"></lucide-icon>
             </div>
-            FlexFlow
+            <span class="hidden xs:inline">FlexFlow</span>
           </h1>
           <div class="flex items-center gap-2 mt-1">
-            <p class="text-slate-500 text-[10px] font-mono uppercase tracking-widest">Status: Optimized</p>
-            <div *ngIf="firebase.isConnected() !== null" class="flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-slate-800 bg-slate-900/50">
-               <div class="w-1.5 h-1.5 rounded-full animate-pulse" [class.bg-emerald-400]="firebase.isConnected()" [class.bg-red-500]="!firebase.isConnected()"></div>
-               <span class="text-[8px] font-bold uppercase tracking-tighter" [class.text-emerald-400/80]="firebase.isConnected()" [class.text-red-500/80]="!firebase.isConnected()">
-                 {{ firebase.isConnected() ? 'Synchronized' : 'Offline' }}
+            <p class="text-slate-500 text-[8px] md:text-[10px] font-mono uppercase tracking-widest">Optimized</p>
+            <div *ngIf="firebase.isConnected() !== null" class="flex items-center gap-1 px-1.5 py-0.5 rounded-full border border-slate-800 bg-slate-900/50">
+               <div class="w-1 h-1 rounded-full animate-pulse" [class.bg-emerald-400]="firebase.isConnected()" [class.bg-red-500]="!firebase.isConnected()"></div>
+               <span class="text-[7px] font-bold uppercase tracking-tighter" [class.text-emerald-400/80]="firebase.isConnected()" [class.text-red-500/80]="!firebase.isConnected()">
+                 {{ firebase.isConnected() ? 'Sync' : 'Offline' }}
                </span>
-               <button *ngIf="!firebase.isConnected()" (click)="firebase.testConnection()" class="text-[7px] text-red-400 underline ml-1 hover:text-white transition-colors">Retry</button>
             </div>
           </div>
         </div>
         
          <div *ngIf="!user()">
-          <button (click)="login()" class="px-5 py-2 bg-white text-slate-950 rounded-xl text-sm font-bold hover:bg-lime-400 transition-all active:scale-95">
+          <button (click)="login()" class="px-4 py-2 bg-white text-slate-950 rounded-xl text-xs md:text-sm font-bold hover:bg-lime-400 transition-all active:scale-95">
             LOG IN
           </button>
         </div>
         
-        <div *ngIf="user()" class="flex items-center gap-4 bg-slate-900 border border-slate-800 p-2 pl-4 rounded-2xl relative overflow-hidden">
-          <div *ngIf="isPro()" class="absolute -top-1 -right-4 bg-lime-400 text-slate-950 text-[7px] font-black uppercase px-6 py-1 rotate-12 shadow-sm">
+        <div *ngIf="user()" class="flex items-center gap-2 md:gap-4 bg-slate-900 border border-slate-800 p-1.5 md:p-2 md:pl-4 rounded-2xl relative overflow-hidden">
+          <div *ngIf="isPro()" class="absolute -top-1 -right-4 bg-lime-400 text-slate-950 text-[6px] md:text-[7px] font-black uppercase px-6 py-1 rotate-12 shadow-sm">
              PRO
           </div>
-          <div class="text-right">
-             <p class="text-[9px] uppercase tracking-widest text-slate-500 font-bold">User session</p>
+          <div class="text-right hidden sm:block">
+             <p class="text-[9px] uppercase tracking-widest text-slate-500 font-bold">Session</p>
              <p class="text-xs font-mono text-lime-400">{{ user()?.displayName?.split(' ')[0] }}</p>
           </div>
-          <img [src]="user()?.photoURL" class="w-8 h-8 rounded-lg border border-slate-800" referrerpolicy="no-referrer" />
-          <button (click)="logout()" class="p-2 text-slate-500 hover:text-white transition-colors">
+          <img [src]="user()?.photoURL" class="w-7 h-7 md:w-8 md:h-8 rounded-lg border border-slate-800" referrerpolicy="no-referrer" />
+          <button (click)="logout()" class="p-1.5 md:p-2 text-slate-500 hover:text-white transition-colors">
             <lucide-icon name="log-out" size="14"></lucide-icon>
           </button>
         </div>
       </header>
 
-      <main class="max-w-4xl mx-auto p-6">
+      <main class="max-w-4xl mx-auto p-4 md:p-6">
         <!-- Dashboard View -->
         <div *ngIf="user() && activeTab === 'dash'" class="grid grid-cols-1 md:grid-cols-4 gap-4">
           
           <!-- BMI & Stats Row -->
-          <div class="md:col-span-4 grid grid-cols-2 md:grid-cols-6 gap-4 mb-2">
-             <div class="bg-slate-900/50 border border-slate-800 p-4 rounded-2xl">
-                <p class="text-[9px] uppercase tracking-[0.2em] text-slate-500 font-bold mb-1">BMI Score</p>
-                <p class="text-2xl font-black text-white tracking-tighter">{{ bmi().toFixed(1) }}</p>
-                <p class="text-[9px] font-mono text-lime-400 underline decoration-lime-400/30 uppercase mt-1">{{ bmiStatus() }}</p>
+          <div class="md:col-span-4 grid grid-cols-2 lg:grid-cols-6 gap-3 md:gap-4 mb-2">
+             <div class="bg-slate-900/50 border border-slate-800 p-3 md:p-4 rounded-2xl">
+                <p class="text-[8px] md:text-[9px] uppercase tracking-[0.2em] text-slate-500 font-bold mb-1">BMI Score</p>
+                <p class="text-xl md:text-2xl font-black text-white tracking-tighter">{{ bmi().toFixed(1) }}</p>
+                <p class="text-[8px] md:text-[9px] font-mono text-lime-400 underline decoration-lime-400/30 uppercase mt-1">{{ bmiStatus() }}</p>
              </div>
-             <div class="bg-slate-900/50 border border-slate-800 p-4 rounded-2xl">
-                <p class="text-[9px] uppercase tracking-[0.2em] text-slate-500 font-bold mb-1">Activity</p>
-                <p class="text-lg font-black text-white tracking-tighter leading-none mt-1 break-words uppercase">{{ profile().activityLevel.replace('_', ' ') }}</p>
+             <div class="bg-slate-900/50 border border-slate-800 p-3 md:p-4 rounded-2xl">
+                <p class="text-[8px] md:text-[9px] uppercase tracking-[0.2em] text-slate-500 font-bold mb-1">Activity</p>
+                <p class="text-base md:text-lg font-black text-white tracking-tighter leading-none mt-1 break-words uppercase">{{ profile().activityLevel.replace('_', ' ') }}</p>
              </div>
-             <div class="bg-slate-900/50 border border-slate-800 p-4 rounded-2xl">
-                <p class="text-[9px] uppercase tracking-[0.2em] text-slate-500 font-bold mb-1">Weight</p>
-                <p class="text-2xl font-black text-white tracking-tighter">{{ profile().weight }}<span class="text-xs ml-1 text-slate-500">kg</span></p>
+             <div class="bg-slate-900/50 border border-slate-800 p-3 md:p-4 rounded-2xl">
+                <p class="text-[8px] md:text-[9px] uppercase tracking-[0.2em] text-slate-500 font-bold mb-1">Weight</p>
+                <p class="text-xl md:text-2xl font-black text-white tracking-tighter">{{ profile().weight }}<span class="text-xs ml-1 text-slate-500">kg</span></p>
              </div>
-             <div class="bg-slate-900/50 border border-slate-800 p-4 rounded-2xl">
-                <p class="text-[9px] uppercase tracking-[0.2em] text-slate-500 font-bold mb-1">Height</p>
-                <p class="text-2xl font-black text-white tracking-tighter">{{ profile().height }}<span class="text-xs ml-1 text-slate-500">cm</span></p>
+             <div class="bg-slate-900/50 border border-slate-800 p-3 md:p-4 rounded-2xl">
+                <p class="text-[8px] md:text-[9px] uppercase tracking-[0.2em] text-slate-500 font-bold mb-1">Height</p>
+                <p class="text-xl md:text-2xl font-black text-white tracking-tighter">{{ profile().height }}<span class="text-xs ml-1 text-slate-500">cm</span></p>
              </div>
-             <div class="bg-slate-900/50 border border-slate-800 p-4 rounded-2xl flex flex-col justify-between">
-                <p class="text-[9px] uppercase tracking-[0.2em] text-slate-500 font-bold mb-1">Engagement</p>
+             <div class="bg-slate-900/50 border border-slate-800 p-3 md:p-4 rounded-2xl flex flex-col justify-between">
+                <p class="text-[8px] md:text-[9px] uppercase tracking-[0.2em] text-slate-500 font-bold mb-1">Engagement</p>
                 <div class="flex items-end justify-between">
-                   <p class="text-2xl font-black text-lime-400 tracking-tighter">{{ protocolEngagement() }}%</p>
+                   <p class="text-xl md:text-2xl font-black text-lime-400 tracking-tighter">{{ protocolEngagement() }}%</p>
                    <lucide-icon name="activity" size="12" class="text-lime-400 animate-pulse mb-1"></lucide-icon>
                 </div>
              </div>
-             <div class="bg-slate-900/50 border border-slate-800 p-4 rounded-2xl flex flex-col justify-between">
-                <p class="text-[9px] uppercase tracking-[0.2em] text-slate-500 font-bold mb-1">Net Flow</p>
-                <p class="text-2xl font-black text-blue-400 tracking-tighter">{{ todayCalories() - todayCaloriesBurned() }}<span class="text-[10px] ml-1 text-slate-500 uppercase">net</span></p>
+             <div class="bg-slate-900/50 border border-slate-800 p-3 md:p-4 rounded-2xl flex flex-col justify-between">
+                <p class="text-[8px] md:text-[9px] uppercase tracking-[0.2em] text-slate-500 font-bold mb-1">Net Flow</p>
+                <p class="text-xl md:text-2xl font-black text-blue-400 tracking-tighter">{{ todayCalories() - todayCaloriesBurned() }}<span class="text-[10px] ml-1 text-slate-500 uppercase">net</span></p>
              </div>
           </div>
 
           <!-- Calorie KPI (Large Circle) -->
-          <div class="md:col-span-2 md:row-span-2 bg-slate-900 border border-slate-800 rounded-[2.5rem] p-8 flex flex-col items-center justify-center min-h-[360px] relative overflow-hidden group">
+          <div class="md:col-span-2 md:row-span-2 bg-slate-900 border border-slate-800 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-8 flex flex-col items-center justify-center min-h-[320px] md:min-h-[360px] relative overflow-hidden group">
             <div class="absolute inset-0 bg-lime-400/[0.02] scale-0 group-hover:scale-100 transition-transform duration-700 rounded-full"></div>
             
-            <div class="relative z-10 w-full flex flex-col items-center">
-              <div class="flex justify-between items-center w-full mb-8">
+            <div class="relative z-10 w-full flex flex-col items-center gap-4 md:gap-8">
+              <div class="flex justify-between items-center w-full">
                 <h3 class="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em]">Energy Matrix</h3>
                 <div class="flex flex-col items-end">
                    <span class="text-[10px] font-mono text-lime-400 leading-none">GOAL_SYNC</span>
@@ -144,8 +144,8 @@ interface UserProfile {
               </div>
 
               <!-- Main Progress Circle -->
-              <div class="relative w-64 h-64 flex items-center justify-center">
-                <svg class="w-full h-full -rotate-90 transform">
+              <div class="relative w-48 h-48 md:w-64 md:h-64 flex items-center justify-center">
+                <svg class="w-full h-full -rotate-90 transform" viewBox="0 0 256 256">
                   <!-- Background Track -->
                   <circle
                     cx="128"
@@ -185,18 +185,18 @@ interface UserProfile {
                 </svg>
 
                 <!-- Center Content -->
-                <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
-                  <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest leading-none mb-1">Consumed</p>
-                  <p class="text-6xl font-black tracking-tighter text-white leading-none">{{ todayCalories() | number }}</p>
-                  <div class="mt-2 h-[1px] w-12 bg-slate-800"></div>
-                  <p class="text-[10px] font-mono text-slate-400 mt-2 uppercase tracking-tighter">
+                <div class="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
+                  <p class="text-slate-500 text-[8px] md:text-[10px] font-bold uppercase tracking-widest leading-none mb-1">Consumed</p>
+                  <p class="text-4xl md:text-6xl font-black tracking-tighter text-white leading-none">{{ todayCalories() | number }}</p>
+                  <div class="mt-2 h-[1px] w-8 md:w-12 bg-slate-800"></div>
+                  <p class="text-[8px] md:text-[10px] font-mono text-slate-400 mt-2 uppercase tracking-tighter">
                     {{ remainingCalories() }} remaining
                   </p>
                 </div>
               </div>
 
               <!-- Bottom Stats -->
-              <div class="grid grid-cols-2 w-full mt-10 gap-4">
+              <div class="grid grid-cols-2 w-full gap-3 md:gap-4">
                  <div class="bg-slate-950/50 p-3 rounded-2xl border border-slate-800/50">
                     <p class="text-[8px] font-bold text-slate-600 uppercase tracking-widest mb-1">Target</p>
                     <p class="text-lg font-black text-white tracking-tighter">{{ profile().dailyCalorieGoal | number }}</p>
@@ -303,18 +303,18 @@ interface UserProfile {
 
           <!-- Testimonials section -->
           <div class="md:col-span-4 mt-8">
-             <div class="flex justify-between items-center mb-6 px-4">
+             <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6 px-4">
                 <div>
                    <h3 class="text-white text-xl font-black uppercase italic tracking-tighter">System_Reviews</h3>
                    <p class="text-[9px] font-mono text-slate-500 uppercase tracking-widest mt-1">High-Efficiency Protocol Testimonials</p>
                 </div>
-                <div class="flex gap-2">
-                   <button (click)="showTestimonyForm.set(!showTestimonyForm())" class="text-[9px] bg-slate-900 border border-slate-800 text-slate-400 px-4 py-2 rounded-xl font-bold uppercase tracking-widest hover:text-white hover:border-slate-700 transition-all flex items-center gap-2">
+                <div class="flex flex-wrap gap-2">
+                   <button (click)="showTestimonyForm.set(!showTestimonyForm())" class="text-[9px] bg-slate-900 border border-slate-800 text-slate-400 px-3 md:px-4 py-2 rounded-xl font-bold uppercase tracking-widest hover:text-white hover:border-slate-700 transition-all flex items-center gap-2">
                       <lucide-icon [name]="showTestimonyForm() ? 'plus' : 'award'" [class.rotate-45]="showTestimonyForm()" size="12"></lucide-icon>
                       {{ showTestimonyForm() ? 'Cancel' : 'Submit Review' }}
                    </button>
                    @if (testimonials().length === 0) {
-                      <button (click)="seedTestimonials()" class="text-[9px] bg-lime-400 text-black px-4 py-2 rounded-xl font-bold uppercase tracking-widest hover:bg-white transition-all">Initialize Logs</button>
+                      <button (click)="seedTestimonials()" class="text-[9px] bg-lime-400 text-black px-3 md:px-4 py-2 rounded-xl font-bold uppercase tracking-widest hover:bg-white transition-all">Initialize Logs</button>
                    }
                 </div>
              </div>
@@ -518,19 +518,6 @@ interface UserProfile {
 
               <h2 class="text-6xl font-black tracking-tighter leading-[0.8] uppercase italic">Visual<br/>Input</h2>
 
-              <!-- API Key Missing Warning -->
-              <div *ngIf="isApiKeyMissing()" class="bg-amber-500/10 border border-amber-500/20 p-5 rounded-2xl flex flex-col gap-3 mb-6 animate-in fade-in slide-in-from-bottom-2">
-                 <div class="flex items-center gap-3 text-amber-600">
-                    <lucide-icon name="key" size="20" class="shrink-0"></lucide-icon>
-                    <p class="text-[11px] font-black uppercase tracking-widest italic">Neural Link Offline</p>
-                 </div>
-                 <p class="text-[10px] text-slate-600 font-medium leading-relaxed">
-                    To enable the AI scanner, please add <code class="bg-amber-100 px-1 rounded font-bold">GEMINI_API_KEY</code> in the **Secrets** or **Environment Variables** section of the Settings menu (Gear Icon ⚙️ in the bottom-left corner).
-                 </p>
-                 <div class="flex gap-2 mt-1">
-                    <div class="text-[8px] bg-amber-100 text-amber-700 px-2 py-1 rounded border border-amber-200 uppercase font-bold tracking-tighter">Required for Vision Analysis</div>
-                 </div>
-              </div>
               
               <!-- Category Selector -->
               <div class="flex gap-2 mb-2 p-1 bg-slate-100 rounded-xl w-fit">
@@ -619,18 +606,18 @@ interface UserProfile {
                  </button>
               </div>
 
-              <div class="relative flex flex-col sm:flex-row gap-3">
-                <div class="flex-1 relative">
+              <div class="relative flex flex-col gap-3">
+                <div class="relative">
                   <input 
                     [(ngModel)]="mealInput" 
-                    placeholder="DESCRIBE MEAL OR UPLOAD PHOTO..."
-                    class="w-full bg-slate-100 border-none rounded-2xl pl-6 pr-16 py-5 text-lg font-bold placeholder:text-slate-300 focus:ring-0 transition-all uppercase"
+                    placeholder="DESCRIBE MEAL..."
+                    class="w-full bg-slate-100 border-none rounded-2xl pl-6 pr-16 py-4 md:py-5 text-base md:text-lg font-bold placeholder:text-slate-300 focus:ring-0 transition-all uppercase"
                     (keyup.enter)="analyzeMeal()"
                     [disabled]="isAnalyzing"
                   />
-                  <div class="absolute right-3 top-3 flex gap-2">
-                     <label class="bg-slate-200 text-slate-600 p-4 rounded-xl hover:bg-slate-300 transition-all flex items-center justify-center cursor-pointer">
-                        <lucide-icon name="camera" size="20"></lucide-icon>
+                  <div class="absolute right-2 top-2 h-[calc(100%-1rem)]">
+                     <label class="h-full px-4 bg-slate-200 text-slate-600 rounded-xl hover:bg-slate-300 transition-all flex items-center justify-center cursor-pointer">
+                        <lucide-icon name="camera" size="18"></lucide-icon>
                         <input type="file" class="hidden" accept="image/*" (change)="onFileSelected($event)" />
                      </label>
                   </div>
@@ -638,11 +625,11 @@ interface UserProfile {
                 <button 
                   (click)="analyzeMeal()" 
                   [disabled]="isAnalyzing || (!mealInput && !selectedImage)"
-                  class="bg-slate-950 text-white px-8 py-5 rounded-2xl hover:bg-lime-400 hover:text-slate-950 disabled:opacity-30 transition-all flex items-center justify-center cursor-pointer font-black tracking-widest uppercase italic gap-3 relative overflow-hidden"
+                  class="w-full sm:w-auto bg-slate-950 text-white px-8 py-4 md:py-5 rounded-2xl hover:bg-lime-400 hover:text-slate-950 disabled:opacity-30 transition-all flex items-center justify-center cursor-pointer font-black tracking-widest uppercase italic gap-3 relative overflow-hidden"
                 >
                   <div *ngIf="isAnalyzing" class="absolute inset-0 bg-lime-400/20 animate-pulse"></div>
                   <lucide-icon [name]="isAnalyzing ? 'activity' : 'chevron-right'" [class.animate-pulse]="isAnalyzing"></lucide-icon>
-                  <span class="relative z-10">{{ isAnalyzing ? 'Decoding Metabolism...' : 'Analyze' }}</span>
+                  <span class="relative z-10 text-xs md:text-sm">{{ isAnalyzing ? 'Decoding...' : 'Analyze' }}</span>
                 </button>
               </div>
               <div *ngIf="isAnalyzing" class="flex items-center gap-3 animate-in fade-in duration-500">
@@ -744,22 +731,22 @@ interface UserProfile {
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="space-y-3">
                   <label class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 block">Weight (kg)</label>
-                  <input type="number" [(ngModel)]="profileEdit.weight" class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-5 py-4 text-white font-mono text-xl focus:border-lime-400 focus:outline-none transition-colors" />
+                  <input type="number" [ngModel]="profileEdit().weight" (ngModelChange)="updateProfileEdit('weight', $event)" class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-5 py-4 text-white font-mono text-xl focus:border-lime-400 focus:outline-none transition-colors" />
                 </div>
                 
                 <div class="space-y-3">
                   <label class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 block">Height (cm)</label>
-                  <input type="number" [(ngModel)]="profileEdit.height" class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-5 py-4 text-white font-mono text-xl focus:border-lime-400 focus:outline-none transition-colors" />
+                  <input type="number" [ngModel]="profileEdit().height" (ngModelChange)="updateProfileEdit('height', $event)" class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-5 py-4 text-white font-mono text-xl focus:border-lime-400 focus:outline-none transition-colors" />
                 </div>
 
                 <div class="space-y-3">
                   <label class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 block">Age (yr)</label>
-                  <input type="number" [(ngModel)]="profileEdit.age" class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-5 py-4 text-white font-mono text-xl focus:border-lime-400 focus:outline-none transition-colors" />
+                  <input type="number" [ngModel]="profileEdit().age" (ngModelChange)="updateProfileEdit('age', $event)" class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-5 py-4 text-white font-mono text-xl focus:border-lime-400 focus:outline-none transition-colors" />
                 </div>
 
                 <div class="space-y-3">
                   <label class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 block">Gender</label>
-                  <select [(ngModel)]="profileEdit.gender" class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-5 py-4 text-white font-mono text-xl focus:border-lime-400 focus:outline-none transition-colors uppercase">
+                  <select [ngModel]="profileEdit().gender" (ngModelChange)="updateProfileEdit('gender', $event)" class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-5 py-4 text-white font-mono text-xl focus:border-lime-400 focus:outline-none transition-colors uppercase">
                     <option value="male">MALE</option>
                     <option value="female">FEMALE</option>
                     <option value="other">OTHER</option>
@@ -768,7 +755,7 @@ interface UserProfile {
 
                 <div class="md:col-span-2 space-y-3">
                    <label class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 block">Activity Level</label>
-                   <select [(ngModel)]="profileEdit.activityLevel" class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-5 py-4 text-white font-mono text-xl focus:border-lime-400 focus:outline-none transition-colors uppercase">
+                   <select [ngModel]="profileEdit().activityLevel" (ngModelChange)="updateProfileEdit('activityLevel', $event)" class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-5 py-4 text-white font-mono text-xl focus:border-lime-400 focus:outline-none transition-colors uppercase">
                     <option value="sedentary">SEDENTARY (Office Job)</option>
                     <option value="light">LIGHT (1-3 days exercise)</option>
                     <option value="moderate">MODERATE (3-5 days exercise)</option>
@@ -821,10 +808,10 @@ interface UserProfile {
         <!-- Workout View -->
         <section *ngIf="user() && activeTab === 'work'" class="space-y-6">
           <!-- Weekly Protocol Selector -->
-          <div class="bg-slate-900 border border-slate-800 p-8 rounded-[3rem] space-y-6">
-             <div class="flex justify-between items-end">
+          <div class="bg-slate-900 border border-slate-800 p-6 md:p-8 rounded-[2.5rem] md:rounded-[3rem] space-y-6">
+             <div class="flex flex-col md:flex-row md:justify-between items-start md:items-end gap-4">
                 <div>
-                   <h2 class="text-4xl font-black tracking-tighter text-white uppercase italic leading-none">Weekly<br/>Protocol</h2>
+                   <h2 class="text-3xl md:text-4xl font-black tracking-tighter text-white uppercase italic leading-none">Weekly<br/>Protocol</h2>
                    <p class="text-slate-500 text-[10px] font-mono tracking-widest uppercase mt-2">Cycle Analysis & Planning</p>
                 </div>
                 <div class="bg-lime-400/10 border border-lime-400/20 px-3 py-1.5 rounded-xl flex items-center gap-2">
@@ -1101,14 +1088,14 @@ interface UserProfile {
       </main>
 
       <!-- Glass Nav -->
-      <nav *ngIf="user()" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/40 backdrop-blur-2xl border border-white/5 px-2 py-2 flex gap-1 rounded-3xl z-50 shadow-2xl">
+      <nav *ngIf="user()" class="fixed bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/40 backdrop-blur-2xl border border-white/5 px-2 py-2 flex gap-1 rounded-[2rem] md:rounded-3xl z-50 shadow-2xl w-[90%] md:w-auto overflow-x-auto no-scrollbar md:overflow-visible">
         <button *ngFor="let tab of navTabs" (click)="activeTab = tab.id" 
                 [class.bg-white]="activeTab === tab.id" 
                 [class.text-slate-950]="activeTab === tab.id" 
                 [class.text-slate-500]="activeTab !== tab.id" 
-                class="flex items-center gap-2 px-6 py-3 rounded-2xl transition-all duration-300">
+                class="flex items-center justify-center gap-1.5 md:gap-2 px-3 sm:px-4 md:px-6 py-2.5 md:py-3 rounded-2xl transition-all duration-300 flex-1 md:flex-none">
            <lucide-icon [name]="tab.icon" size="18"></lucide-icon>
-           <span *ngIf="activeTab === tab.id" class="text-[10px] font-black uppercase tracking-widest leading-none">{{ tab.label }}</span>
+           <span *ngIf="activeTab === tab.id" class="text-[8px] md:text-[10px] font-black uppercase tracking-widest leading-none hidden xs:inline">{{ tab.label }}</span>
         </button>
       </nav>
       
@@ -1358,7 +1345,11 @@ export class HomeComponent implements OnInit {
     dailyProteinGoal: 150
   });
 
-  profileEdit: UserProfile = { ...this.profile() };
+  profileEdit = signal<UserProfile>({ ...this.profile() });
+
+  updateProfileEdit(field: keyof UserProfile, value: any) {
+    this.profileEdit.update(p => ({ ...p, [field]: value }));
+  }
 
   showToast(message: string, type: 'success' | 'error' | 'info' = 'success') {
     const id = Date.now();
@@ -1385,7 +1376,7 @@ export class HomeComponent implements OnInit {
   });
 
   calculatedCalories = computed(() => {
-    const p = this.profileEdit;
+    const p = this.profileEdit();
     let bmr = 0;
     if (p.gender === 'male') {
       bmr = 10 * p.weight + 6.25 * p.height - 5 * p.age + 5;
@@ -1442,10 +1433,6 @@ export class HomeComponent implements OnInit {
     return this.circumference - (percent / 100) * this.circumference;
   });
 
-  isApiKeyMissing = computed(() => {
-    return typeof GEMINI_API_KEY === 'undefined' || !GEMINI_API_KEY || GEMINI_API_KEY === 'MY_GEMINI_API_KEY' || GEMINI_API_KEY === '';
-  });
-
   navTabs = [
     { id: 'dash', icon: 'flame', label: 'Dash' },
     { id: 'insights', icon: 'activity', label: 'Stats' },
@@ -1480,14 +1467,8 @@ export class HomeComponent implements OnInit {
     });
     this.firebase.auth.onAuthStateChanged(u => {
       if (u) {
-        // Check if session has expired (30 mins of inactivity)
-        if (this.firebase.isSessionExpired()) {
-           this.logout();
-           this.showToast('Protocol session expired', 'info');
-           return;
-        }
         this.user.set(u);
-        this.firebase.updateSessionTimestamp();
+        this.firebase.updateSessionTimestamp(); // Always refresh on auth change
         this.loadProfile();
         this.loadData();
         this.firebase.checkIn(u.uid);
@@ -1526,12 +1507,11 @@ export class HomeComponent implements OnInit {
 
   async login() {
     try {
+      this.firebase.clearSessionTimestamp(); // Reset session clock before login
       const provider = new GoogleAuthProvider();
-      // Adding custom parameters can sometimes help with popup window issues
-      provider.setCustomParameters({ prompt: 'select_account' });
       const result = await signInWithPopup(this.firebase.auth, provider);
       if (result.user) {
-        this.firebase.updateSessionTimestamp();
+        this.user.set(result.user);
         this.showToast('Human identity verified', 'success');
       }
     } catch (e: any) { 
@@ -1556,7 +1536,7 @@ export class HomeComponent implements OnInit {
     const p = await this.firebase.getProfile(currentUser.uid);
     if (p) {
       this.profile.set(p as UserProfile);
-      this.profileEdit = { ...this.profile() };
+      this.profileEdit.set({ ...this.profile() });
     } else {
       // Initialize protocol for new human connection
       const defaultProfile: UserProfile = {
@@ -1571,7 +1551,7 @@ export class HomeComponent implements OnInit {
       };
       await this.firebase.saveProfile(currentUser.uid, defaultProfile);
       this.profile.set(defaultProfile);
-      this.profileEdit = { ...defaultProfile };
+      this.profileEdit.set({ ...defaultProfile });
       this.showToast('Human protocol initiated', 'success');
     }
   }
@@ -1581,13 +1561,19 @@ export class HomeComponent implements OnInit {
     if (!currentUser) return;
     this.firebase.updateSessionTimestamp();
     try {
+      const p = this.profileEdit();
       const calories = this.calculatedCalories();
-      const protein = Math.round(this.profileEdit.weight * 2); // 2g per kg rule of thumb
-      this.profileEdit.dailyCalorieGoal = calories;
-      this.profileEdit.dailyProteinGoal = protein;
+      const protein = Math.round(p.weight * 2); // 2g per kg rule of thumb
       
-      await this.firebase.saveProfile(currentUser.uid, this.profileEdit);
-      this.profile.set({ ...this.profileEdit });
+      const updatedProfile = {
+        ...p,
+        dailyCalorieGoal: calories,
+        dailyProteinGoal: protein
+      };
+      
+      await this.firebase.saveProfile(currentUser.uid, updatedProfile);
+      this.profile.set(updatedProfile);
+      this.profileEdit.set(updatedProfile);
       this.activeTab = 'dash';
       this.showToast('Profile protocol updated');
     } catch (e) {
@@ -1683,8 +1669,14 @@ export class HomeComponent implements OnInit {
       }
     } catch (e: any) { 
       console.error(e);
-      const isApiKeyError = e.message?.includes('GEMINI_API_KEY') || e.message?.includes('API key');
-      this.showToast(isApiKeyError ? 'Gemini API Key missing (check Settings)' : 'Bio-analysis failed', 'error');
+      const isApiKeyError = e.message?.includes('GEMINI_API_KEY') || e.message?.includes('API key') || e.status === 403;
+      const isQuotaError = e.message?.includes('quota') || e.status === 429;
+      
+      let errorMsg = 'Bio-analysis failed';
+      if (isApiKeyError) errorMsg = 'Gemini API Key invalid/missing';
+      else if (isQuotaError) errorMsg = 'AI Quota exceeded';
+      
+      this.showToast(errorMsg, 'error');
     }
     finally { this.isAnalyzing = false; }
   }
@@ -1763,7 +1755,7 @@ export class HomeComponent implements OnInit {
         createdAt: Timestamp.now()
       });
       // Also update profile current weight
-      this.profileEdit.weight = this.newWeight;
+      this.updateProfileEdit('weight', this.newWeight);
       await this.saveProfile();
       this.loadData();
       this.newWeight = 0;
